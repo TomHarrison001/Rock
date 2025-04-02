@@ -1,6 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include <stdio.h>
+
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
@@ -16,6 +17,7 @@
 #  error Unsupported OS
 #endif
 // clang-format on
+
 #include <GLFW/glfw3native.h>
 
 GLFWwindow* initWindow(const char* windowTitle, uint32_t& outWidth, uint32_t& outHeight);

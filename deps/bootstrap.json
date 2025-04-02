@@ -1,0 +1,34 @@
+[
+{
+    "name": "vulkan",
+    "source": {
+        "type": "git",
+        "url": "https://github.com/KhronosGroup/Vulkan-Headers.git",
+        "revision": "v1.3.296"
+    }
+},
+{
+    "name": "glfw",
+    "source": {
+        "type": "git",
+        "url": "https://github.com/glfw/glfw.git",
+        "revision": "3.4"
+    }
+},
+{
+    "name": "taskflow",
+    "source": {
+        "type": "git",
+        "url": "https://github.com/taskflow/taskflow.git",
+        "revision": "v3.8.0"
+    }
+},
+{
+    "name": "glslang",
+    "source": {
+        "type": "git",
+        "url": "https://github.com/KhronosGroup/glslang.git",
+        "revision": "15.1.0"
+    }
+}
+]

@@ -1,4 +1,4 @@
-#include "HelperGLFW.h"
+#include <shared/HelpersGLFW.h>
 
 int main()
 {
