@@ -107,6 +107,24 @@ void testShaderCompilation(const char* sourceFilename, const char* destFilename)
 	saveSPIRVBinaryFile(destFilename, spirv.data(), spirv.size());
 }
 
+VkShaderModule createShaderModuleFromSPIRV(const void* spirv, size_t numBytes, const char* debugName, lvk::Result* outResult)
+{
+	VkShaderModule vkShaderModule = VK_NULL_HANDLE;
+
+	const VkShaderModuleCreateInfo ci = {
+		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+		.codeSize = numBytes,
+		.pCode = (const uint32_t*)spirv
+	};
+
+	const VkResult result = vkCreateShaderModule(vkDevice_, &ci, nullptr, &vkShaderModule);
+	lvk::setResultFrom(outResult, result);
+	if (result != VK_SUCCESS) return VK_NULL_HANDLE;
+
+	VK_ASSERT(lvk::setDebugObjectName(vkDevice_, VK_OBJECT_TYPE_SHADER_MODULE, (uint64_t)vkShaderModule, debugName));
+	return vkShaderModule;
+}
+
 int main()
 {
 	glslang_initialize_process();
