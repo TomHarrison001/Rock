@@ -1,20 +1,20 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.19)
 
-project(application CXX C)
+project(Rock CXX C)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set(COOKBOOK_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(COOKBOOK_DEPS_CACHE_FILE "${COOKBOOK_ROOT_DIR}/deps/.bootstrap.json")
+set(ROCK_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(ROCK_DEPS_CACHE_FILE "${ROCK_ROOT_DIR}/deps/.bootstrap.json")
 
 find_package(Python3 COMPONENTS Interpreter)
 
-execute_process(COMMAND ${Python3_EXECUTABLE} deploy_deps.py WORKING_DIRECTORY ${COOKBOOK_ROOT_DIR} COMMAND_ERROR_IS_FATAL ANY)
-add_custom_command(COMMAND ${Python3_EXECUTABLE} deploy_deps.py OUTPUT ${COOKBOOK_DEPS_CACHE_FILE} DEPENDS "${COOKBOOK_ROOT_DIR}/deps/bootstrap.json" WORKING_DIRECTORY ${COOKBOOK_ROOT_DIR})
-add_custom_target(Dependencies DEPENDS ${COOKBOOK_DEPS_CACHE_FILE})
+execute_process(COMMAND ${Python3_EXECUTABLE} deploy_deps.py WORKING_DIRECTORY ${ROCK_ROOT_DIR} COMMAND_ERROR_IS_FATAL ANY)
+add_custom_command(COMMAND ${Python3_EXECUTABLE} deploy_deps.py OUTPUT ${ROCK_DEPS_CACHE_FILE} DEPENDS "${ROCK_ROOT_DIR}/deps/bootstrap.json" WORKING_DIRECTORY ${ROCK_ROOT_DIR})
+add_custom_target(Dependencies DEPENDS ${ROCK_DEPS_CACHE_FILE})
 set_property(TARGET Dependencies PROPERTY FOLDER "third-party")
 
-if(NOT EXISTS ${COOKBOOK_DEPS_CACHE_FILE})
+if(NOT EXISTS ${ROCK_DEPS_CACHE_FILE})
     message(FATAL_ERROR "Cannot bootstrap dependencies.")
 endif()
 
@@ -106,3 +106,4 @@ if(MSVC)
 endif()
 
 add_subdirectory(application)
+set_property(DIRECTORY ${ROCK_ROOT_DIR} PROPERTY VS_STARTUP_PROJECT application)

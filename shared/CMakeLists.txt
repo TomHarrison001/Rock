@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.19)
 
 project(SharedUtils CXX C)
 
@@ -25,5 +25,5 @@ if(WIN32)
   target_compile_definitions(SharedUtils PUBLIC "NOMINMAX")
 endif()
 
-target_sources(SharedUtils PRIVATE "${COOKBOOK_ROOT_DIR}/deps/src/lightweightvk/third-party/deps/src/imgui/imgui_demo.cpp")
-target_sources(SharedUtils PRIVATE "${COOKBOOK_ROOT_DIR}/deps/src/lightweightvk/third-party/deps/src/implot/implot_demo.cpp")
+target_sources(SharedUtils PRIVATE "${ROCK_ROOT_DIR}/deps/src/lightweightvk/third-party/deps/src/imgui/imgui_demo.cpp")
+target_sources(SharedUtils PRIVATE "${ROCK_ROOT_DIR}/deps/src/lightweightvk/third-party/deps/src/implot/implot_demo.cpp")
