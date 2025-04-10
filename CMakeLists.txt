@@ -95,7 +95,7 @@ set_property(TARGET uninstall       PROPERTY FOLDER "third-party")
 
 # shared utils code
 add_subdirectory(shared)
-#add_subdirectory(data)
+add_subdirectory(data)
 
 add_dependencies(SharedUtils Dependencies)
 
