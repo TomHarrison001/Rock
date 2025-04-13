@@ -1,16 +1,27 @@
-#include "Shader.h"
-#include "Compression.h"
+#include <GLFW/glfw3.h>
+#include <LVK.h>
 
 int main()
 {
-	glslang_initialize_process();
+    minilog::initialize(nullptr, { .threadNames = false });
+    int width = 960;
+    int height = 540;
+    GLFWwindow* window = lvk::initWindow("Rock", width, height);
 
-	Shader vertShader("application/res/main.vert", "application/res/.cache/application.vert.bin");
-	Shader fragShader("application/res/main.frag", "application/res/.cache/application.frag.bin");
+    std::unique_ptr<lvk::IContext> ctx = lvk::createVulkanContextWithSwapchain(window, width, height, {});
 
-	glslang_finalize_process();
+    while (!glfwWindowShouldClose(window))
+    {
+        glfwPollEvents();
+        glfwGetFramebufferSize(window, &width, &height);
+        if (!width || !height) continue;
+        lvk::ICommandBuffer& buf = ctx->acquireCommandBuffer();
+        ctx->submit(buf, ctx->getCurrentSwapchainTexture());
+    }
 
-	Compression::CompressTextureToBC7("data/wood.jpg", "data/.cache/wood.ktx");
+    ctx.reset();
+    glfwDestroyWindow(window);
+    glfwTerminate();
 
 	return 0;
 }
