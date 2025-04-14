@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <vector>
 #include <optional>
+#include <set>
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -38,10 +39,11 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 struct QueueFamilyIndices
 {
     std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentFamily;
 
     bool isComplete()
     {
-        return graphicsFamily.has_value();
+        return graphicsFamily.has_value() && presentFamily.has_value();
     }
 };
 
@@ -72,6 +74,7 @@ private:
     {
         createInstance();
         setupDebugMessenger();
+        createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
     }
@@ -89,6 +92,7 @@ private:
         vkDestroyDevice(m_device, nullptr);
         if (enableValidationLayers)
             DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
+        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
         vkDestroyInstance(m_instance, nullptr);
         glfwDestroyWindow(m_window);
         glfwTerminate();
@@ -145,6 +149,12 @@ private:
             throw std::runtime_error("Failed to set up debug messenger.");
     }
 
+    void createSurface()
+    {
+        if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create window surface.");
+    }
+
     void pickPhysicalDevice()
     {
         uint32_t deviceCount = 0;
@@ -173,19 +183,26 @@ private:
     {
         QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
 
-        VkDeviceQueueCreateInfo queueCreateInfo{};
-        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
-        queueCreateInfo.queueCount = 1;
+        std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+        std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
         float queuePriority = 1.f;
-        queueCreateInfo.pQueuePriorities = &queuePriority;
+        for (uint32_t queueFamily : uniqueQueueFamilies)
+        {
+            VkDeviceQueueCreateInfo queueCreateInfo{};
+            queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queueCreateInfo.queueFamilyIndex = queueFamily;
+            queueCreateInfo.queueCount = 1;
+            queueCreateInfo.pQueuePriorities = &queuePriority;
+            queueCreateInfos.push_back(queueCreateInfo);
+        }
 
         VkPhysicalDeviceFeatures deviceFeatures{};
 
         VkDeviceCreateInfo ci{};
         ci.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        ci.pQueueCreateInfos = &queueCreateInfo;
+        ci.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+        ci.pQueueCreateInfos = queueCreateInfos.data();
         ci.queueCreateInfoCount = 1;
         ci.pEnabledFeatures = &deviceFeatures;
         ci.enabledExtensionCount = 0;
@@ -203,6 +220,7 @@ private:
             throw std::runtime_error("Failed to create logical device.");
 
         vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
+        vkGetDeviceQueue(m_device, indices.presentFamily.value(), 0, &m_presentQueue);
     }
 
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
@@ -283,6 +301,12 @@ private:
             if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
                 indices.graphicsFamily = i;
 
+            VkBool32 presentSupport = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_surface, &presentSupport);
+
+            if (presentSupport)
+                indices.presentFamily = i;
+
             if (indices.isComplete())
                 break;
 
@@ -298,9 +322,11 @@ private:
     GLFWwindow* m_window;
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
+    VkSurfaceKHR m_surface;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     VkDevice m_device;
     VkQueue m_graphicsQueue;
+    VkQueue m_presentQueue;
 };
 
 int main() {
