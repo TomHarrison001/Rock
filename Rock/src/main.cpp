@@ -73,6 +73,7 @@ private:
         createInstance();
         setupDebugMessenger();
         pickPhysicalDevice();
+        createLogicalDevice();
     }
 
     void mainLoop()
@@ -85,6 +86,7 @@ private:
 
     void cleanup()
     {
+        vkDestroyDevice(m_device, nullptr);
         if (enableValidationLayers)
             DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
         vkDestroyInstance(m_instance, nullptr);
@@ -165,6 +167,42 @@ private:
 
         if (m_physicalDevice == VK_NULL_HANDLE)
             throw std::runtime_error("Failed to find a suitable GPU.");
+    }
+
+    void createLogicalDevice()
+    {
+        QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
+
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
+        queueCreateInfo.queueCount = 1;
+
+        float queuePriority = 1.f;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+
+        VkPhysicalDeviceFeatures deviceFeatures{};
+
+        VkDeviceCreateInfo ci{};
+        ci.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        ci.pQueueCreateInfos = &queueCreateInfo;
+        ci.queueCreateInfoCount = 1;
+        ci.pEnabledFeatures = &deviceFeatures;
+        ci.enabledExtensionCount = 0;
+        if (enableValidationLayers)
+        {
+            ci.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+            ci.ppEnabledLayerNames = validationLayers.data();
+        }
+        else
+        {
+            ci.enabledLayerCount = 0;
+        }
+
+        if (vkCreateDevice(m_physicalDevice, &ci, nullptr, &m_device) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create logical device.");
+
+        vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
     }
 
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
@@ -261,6 +299,8 @@ private:
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+    VkDevice m_device;
+    VkQueue m_graphicsQueue;
 };
 
 int main() {
