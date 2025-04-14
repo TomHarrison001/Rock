@@ -93,6 +93,7 @@ private:
         pickPhysicalDevice();
         createLogicalDevice();
         createSwapChain();
+        createImageViews();
     }
 
     void mainLoop()
@@ -105,6 +106,10 @@ private:
 
     void cleanup()
     {
+        for (auto imageView : m_swapChainImageViews)
+        {
+            vkDestroyImageView(m_device, imageView, nullptr);
+        }
         vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
         vkDestroyDevice(m_device, nullptr);
         if (enableValidationLayers)
@@ -294,6 +299,32 @@ private:
 
         m_swapChainImageFormat = surfaceFormat.format;
         m_swapChainExtent = extent;
+    }
+
+    void createImageViews()
+    {
+        m_swapChainImageViews.resize(m_swapChainImages.size());
+
+        for (size_t i = 0; i < m_swapChainImages.size(); i++)
+        {
+            VkImageViewCreateInfo ci{};
+            ci.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            ci.image = m_swapChainImages[i];
+            ci.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            ci.format = m_swapChainImageFormat;
+            ci.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+            ci.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+            ci.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+            ci.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+            ci.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            ci.subresourceRange.baseMipLevel = 0;
+            ci.subresourceRange.levelCount = 1;
+            ci.subresourceRange.baseArrayLayer = 0;
+            ci.subresourceRange.layerCount = 1;
+
+            if (vkCreateImageView(m_device, &ci, nullptr, &m_swapChainImageViews[i]) != VK_SUCCESS)
+                throw std::runtime_error("Failed to create image views.");
+        }
     }
 
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
@@ -496,6 +527,7 @@ private:
     std::vector<VkImage> m_swapChainImages;
     VkFormat m_swapChainImageFormat;
     VkExtent2D m_swapChainExtent;
+    std::vector<VkImageView> m_swapChainImageViews;
 };
 
 int main() {
