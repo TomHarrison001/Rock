@@ -95,6 +95,7 @@ private:
         createLogicalDevice();
         createSwapChain();
         createImageViews();
+        createRenderPass();
         createGraphicsPipeline();
     }
 
@@ -109,6 +110,7 @@ private:
     void cleanup()
     {
         vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+        vkDestroyRenderPass(m_device, m_renderPass, nullptr);
         for (auto imageView : m_swapChainImageViews)
         {
             vkDestroyImageView(m_device, imageView, nullptr);
@@ -328,6 +330,38 @@ private:
             if (vkCreateImageView(m_device, &ci, nullptr, &m_swapChainImageViews[i]) != VK_SUCCESS)
                 throw std::runtime_error("Failed to create image views.");
         }
+    }
+
+    void createRenderPass()
+    {
+        VkAttachmentDescription colourAttachment{};
+        colourAttachment.format = m_swapChainImageFormat;
+        colourAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        colourAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        colourAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        colourAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        colourAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        colourAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        colourAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+        VkAttachmentReference colourAttachmentRef{};
+        colourAttachmentRef.attachment = 0;
+        colourAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkSubpassDescription subpass{};
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.colorAttachmentCount = 1;
+        subpass.pColorAttachments = &colourAttachmentRef;
+
+        VkRenderPassCreateInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        renderPassInfo.attachmentCount = 1;
+        renderPassInfo.pAttachments = &colourAttachment;
+        renderPassInfo.subpassCount = 1;
+        renderPassInfo.pSubpasses = &subpass;
+
+        if (vkCreateRenderPass(m_device, &renderPassInfo, nullptr, &m_renderPass) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create render pass.");
     }
 
     void createGraphicsPipeline()
@@ -682,6 +716,7 @@ private:
     VkFormat m_swapChainImageFormat;
     VkExtent2D m_swapChainExtent;
     std::vector<VkImageView> m_swapChainImageViews;
+    VkRenderPass m_renderPass;
     VkPipelineLayout m_pipelineLayout;
 };
 
