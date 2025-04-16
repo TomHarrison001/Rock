@@ -98,6 +98,8 @@ private:
         createRenderPass();
         createGraphicsPipeline();
         createFramebuffers();
+        createCommandPool();
+        createCommandBuffer();
     }
 
     void mainLoop()
@@ -110,6 +112,7 @@ private:
 
     void cleanup()
     {
+        vkDestroyCommandPool(m_device, m_commandPool, nullptr);
         for (auto framebuffer : m_swapChainFramebuffers)
         {
             vkDestroyFramebuffer(m_device, framebuffer, nullptr);
@@ -404,24 +407,10 @@ private:
         inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-        VkViewport viewport{};
-        viewport.x = 0.f;
-        viewport.y = 0.f;
-        viewport.width = (float)m_swapChainExtent.width;
-        viewport.height = (float)m_swapChainExtent.height;
-        viewport.minDepth = 0.f;
-        viewport.maxDepth = 1.f;
-
-        VkRect2D scissor{};
-        scissor.offset = { 0, 0 };
-        scissor.extent = m_swapChainExtent;
-
         VkPipelineViewportStateCreateInfo viewportState{};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
         viewportState.viewportCount = 1;
-        viewportState.pViewports = &viewport;
         viewportState.scissorCount = 1;
-        viewportState.pScissors = &scissor;
 
         VkPipelineRasterizationStateCreateInfo rasteriser{};
         rasteriser.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -533,6 +522,31 @@ private:
             if (vkCreateFramebuffer(m_device, &framebufferInfo, nullptr, &m_swapChainFramebuffers[i]) != VK_SUCCESS)
                 throw std::runtime_error("Failed to create framebuffer.");
         }
+    }
+
+    void createCommandPool()
+    {
+        QueueFamilyIndices queueFamilyIndices = findQueueFamilies(m_physicalDevice);
+
+        VkCommandPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+        if (vkCreateCommandPool(m_device, &poolInfo, nullptr, &m_commandPool) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create command pool.");
+    }
+
+    void createCommandBuffer()
+    {
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = m_commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = 1;
+
+        if (vkAllocateCommandBuffers(m_device, &allocInfo, &m_commandBuffer) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create command buffers.");
     }
 
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
@@ -727,6 +741,50 @@ private:
         return shaderModule;
     }
 
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+    {
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0; // optional
+        beginInfo.pInheritanceInfo = nullptr; // optional
+
+        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
+            throw std::runtime_error("Failed to begin recording command buffer.");
+
+        VkClearValue clearColour = { {{ 0.f, 0.f, 0.f, 1.f }} };
+        VkRenderPassBeginInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = m_renderPass;
+        renderPassInfo.framebuffer = m_swapChainFramebuffers[imageIndex];
+        renderPassInfo.renderArea.offset = { 0, 0 };
+        renderPassInfo.renderArea.extent = m_swapChainExtent;
+        renderPassInfo.clearValueCount = 1;
+        renderPassInfo.pClearValues = &clearColour;
+
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // vkCmd commands return void so no error handling until recording is finished
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
+
+        VkViewport viewport{};
+        viewport.x = 0.f;
+        viewport.y = 0.f;
+        viewport.width = (float)m_swapChainExtent.width;
+        viewport.height = (float)m_swapChainExtent.height;
+        viewport.minDepth = 0.f;
+        viewport.maxDepth = 1.f;
+
+        VkRect2D scissor{};
+        scissor.offset = { 0, 0 };
+        scissor.extent = m_swapChainExtent;
+
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+        vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+        vkCmdEndRenderPass(commandBuffer);
+
+        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
+            throw std::runtime_error("Failed to record command buffer.");
+    }
+
     static std::vector<char> readFile(const std::string& filename)
     {
         std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -771,6 +829,8 @@ private:
     VkPipelineLayout m_pipelineLayout;
     VkPipeline m_graphicsPipeline;
     std::vector<VkFramebuffer> m_swapChainFramebuffers;
+    VkCommandPool m_commandPool;
+    VkCommandBuffer m_commandBuffer;
 };
 
 int main() {
