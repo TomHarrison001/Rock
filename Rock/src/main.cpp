@@ -98,9 +98,14 @@ struct Vertex
 };
 
 const std::vector<Vertex> vertices = {
-    {{-0.5f, -0.5f}, {1.f, 0.f, 0.f}},
-    {{0.5f, 0.5f}, {1.f, 1.f, 0.f}},
-    {{-0.5f, 0.5f}, {0.f, 1.f, 0.f}}
+    {{ -0.5f, -0.5f }, { 1.f, 0.f, 0.f }},
+    {{  0.5f, -0.5f }, { 1.f, 1.f, 0.f }},
+    {{  0.5f,  0.5f }, { 0.f, 1.f, 0.f }},
+    {{ -0.5f,  0.5f }, { 0.f, 0.f, 1.f }}
+};
+
+const std::vector<uint16_t> indices = {
+    0, 1, 2, 2, 3, 0
 };
 
 class Application
@@ -142,6 +147,7 @@ private:
         createFramebuffers();
         createCommandPool();
         createVertexBuffer();
+        createIndexBuffer();
         createCommandBuffers();
         createSyncObjects();
     }
@@ -164,6 +170,8 @@ private:
         vkDestroyRenderPass(m_device, m_renderPass, nullptr);
         vkDestroyBuffer(m_device, m_vertexBuffer, nullptr);
         vkFreeMemory(m_device, m_vertexBufferMemory, nullptr);
+        vkDestroyBuffer(m_device, m_indexBuffer, nullptr);
+        vkFreeMemory(m_device, m_indexBufferMemory, nullptr);
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
             vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
@@ -649,6 +657,27 @@ private:
         vkFreeMemory(m_device, stagingBufferMemory, nullptr);
     }
 
+    void createIndexBuffer()
+    {
+        VkDeviceSize bufferSize = sizeof(uint16_t) * indices.size();
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+        void* data;
+        vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        memcpy(data, indices.data(), (size_t)bufferSize);
+        vkUnmapMemory(m_device, stagingBufferMemory);
+
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_indexBuffer, m_indexBufferMemory);
+
+        copyBuffer(stagingBuffer, m_indexBuffer, bufferSize);
+
+        vkDestroyBuffer(m_device, stagingBuffer, nullptr);
+        vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+    }
+
     void createCommandBuffers()
     {
         m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -977,8 +1006,9 @@ private:
         VkBuffer vertexBuffers[] = { m_vertexBuffer };
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+        vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-        vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
         vkCmdEndRenderPass(commandBuffer);
 
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -1113,6 +1143,8 @@ private:
     VkCommandPool m_commandPool;
     VkBuffer m_vertexBuffer;
     VkDeviceMemory m_vertexBufferMemory;
+    VkBuffer m_indexBuffer;
+    VkDeviceMemory m_indexBufferMemory;
     std::vector<VkCommandBuffer> m_commandBuffers;
     std::vector<VkSemaphore> m_imageAvailableSemaphores;
     std::vector<VkSemaphore> m_renderFinishedSemaphores;
