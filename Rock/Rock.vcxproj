@@ -146,6 +146,7 @@
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="res\shaders\main.comp" />
     <None Include="res\shaders\main.frag" />
     <None Include="res\shaders\main.vert" />
   </ItemGroup>

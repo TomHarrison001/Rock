@@ -1,0 +1,34 @@
+#version 460
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+struct Particle {
+    vec2 position;
+    vec2 velocity;
+    vec4 colour;
+};
+
+layout(std140, binding = 1) readonly buffer ParticleSSBOin {
+    Particle partsIn[];
+};
+
+layout(std140, binding = 2) buffer ParticleSSBOout {
+    Particle partsOut[];
+};
+
+layout(binding = 0) uniform UBO {
+    float u_deltaTime;
+} ubo;
+
+void main() {
+    uint index = gl_GlobalInvocationID.x;
+    Particle partIn = partsIn[index];
+    partsOut[index].position = partIn.position + partIn.velocity.xy * ubo.u_deltaTime;
+    partsOut[index].velocity = partIn.velocity;
+
+    // flip movement at window border
+    if ((partsOut[index].position.x <= -1.f) || (partsOut[index].position.x >= 1.f))
+        partsOut[index].velocity.x *= -1.f;
+    if ((partsOut[index].position.y <= -1.f) || (partsOut[index].position.y >= 1.f))
+        partsOut[index].velocity.y *= -1.f;
+}
