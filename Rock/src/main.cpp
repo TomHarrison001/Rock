@@ -744,7 +744,7 @@ private:
     void createTextureImage()
     {
         int texWidth, texHeight, texChannels;
-        stbi_uc* pixels = stbi_load("./res/textures/vikingRoom.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        stbi_uc* pixels = stbi_load("./res/textures/ironGolem.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
         m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
@@ -812,7 +812,7 @@ private:
         std::vector<tinyobj::material_t> materials;
         std::string warn, err;
 
-        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "./res/models/vikingRoom.obj"))
+        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "./res/models/ironGolem.obj"))
             throw std::runtime_error(warn + err);
 
         std::unordered_map<Vertex, uint32_t> uniqueVertices{};
@@ -824,9 +824,9 @@ private:
                 Vertex vertex{};
 
                 vertex.pos = {
-                    attrib.vertices[3 * index.vertex_index],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2]
+                    attrib.vertices[3 * index.vertex_index + 0] * 0.04f, // scale: 0.04f
+                    attrib.vertices[3 * index.vertex_index + 1] * 0.04f, // scale: 0.04f
+                    attrib.vertices[3 * index.vertex_index + 2] * 0.04f  // scale: 0.04f
                 };
 
                 vertex.texCoord = {
@@ -1441,7 +1441,8 @@ private:
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
         UniformBufferObject ubo{};
-        ubo.model = glm::rotate(glm::mat4(1.f), time * glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f));
+        //ubo.model = glm::rotate(glm::mat4(1.f), time * glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f));
+        ubo.model = glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::rotate(glm::mat4(1.f), time * glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
         ubo.view = glm::lookAt(glm::vec3(2.f), glm::vec3(0.f), glm::vec3(0.f, 0.f, 1.f));
         ubo.proj = glm::perspective(glm::radians(45.f), m_swapChainExtent.width / (float)m_swapChainExtent.height, 0.1f, 10.f);
         ubo.proj[1][1] *= -1.f; // image would be renderered upside down otherwise due to glm being originally designed for OpenGL where the Y coord is inverted
