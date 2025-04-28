@@ -886,29 +886,29 @@ private:
 
     void createRenderCommandBuffers()
     {
-        m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+        m_renderCommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.commandPool = m_commandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size());
+        allocInfo.commandBufferCount = static_cast<uint32_t>(m_renderCommandBuffers.size());
 
-        if (vkAllocateCommandBuffers(m_device, &allocInfo, m_commandBuffers.data()) != VK_SUCCESS)
+        if (vkAllocateCommandBuffers(m_device, &allocInfo, m_renderCommandBuffers.data()) != VK_SUCCESS)
             throw std::runtime_error("Failed to create command buffers.");
     }
 
     void createComputeCommandBuffers()
     {
-        m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+        m_computeCommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.commandPool = m_commandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size());
+        allocInfo.commandBufferCount = static_cast<uint32_t>(m_computeCommandBuffers.size());
 
-        if (vkAllocateCommandBuffers(m_device, &allocInfo, m_commandBuffers.data()) != VK_SUCCESS)
+        if (vkAllocateCommandBuffers(m_device, &allocInfo, m_computeCommandBuffers.data()) != VK_SUCCESS)
             throw std::runtime_error("Failed to allocate compute command buffers.");
     }
 
@@ -950,11 +950,11 @@ private:
 
         vkResetFences(m_device, 1, &m_computeInFlightFences[m_currentFrame]);
 
-        vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
-        recordComputeCommandBuffer(m_commandBuffers[m_currentFrame]);
+        vkResetCommandBuffer(m_computeCommandBuffers[m_currentFrame], 0);
+        recordComputeCommandBuffer(m_computeCommandBuffers[m_currentFrame]);
 
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &m_commandBuffers[m_currentFrame];
+        submitInfo.pCommandBuffers = &m_computeCommandBuffers[m_currentFrame];
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = &m_computeFinishedSemaphores[m_currentFrame];
         
@@ -976,8 +976,8 @@ private:
 
         vkResetFences(m_device, 1, &m_renderInFlightFences[m_currentFrame]);
 
-        vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
-        recordRenderCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
+        vkResetCommandBuffer(m_renderCommandBuffers[m_currentFrame], 0);
+        recordRenderCommandBuffer(m_renderCommandBuffers[m_currentFrame], imageIndex);
 
         VkSemaphore waitSemaphores[] = { m_computeFinishedSemaphores[m_currentFrame], m_imageAvailableSemaphores[m_currentFrame] };
         VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -988,9 +988,9 @@ private:
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &m_commandBuffers[m_currentFrame];
+        submitInfo.pCommandBuffers = &m_renderCommandBuffers[m_currentFrame];
         submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &m_renderFinishedSemaphores[m_currentFrame];
+        submitInfo.pSignalSemaphores = signalSemaphores;
 
         if (vkQueueSubmit(m_renderQueue, 1, &submitInfo, m_renderInFlightFences[m_currentFrame]) != VK_SUCCESS)
             throw std::runtime_error("Failed to submit draw command buffer.");
@@ -1415,7 +1415,8 @@ private:
     VkPipelineLayout m_computePipelineLayout;
     VkPipeline m_computePipeline;
     VkCommandPool m_commandPool;
-    std::vector<VkCommandBuffer> m_commandBuffers;
+    std::vector<VkCommandBuffer> m_renderCommandBuffers;
+    std::vector<VkCommandBuffer> m_computeCommandBuffers;
     
     std::vector<VkBuffer> m_shaderStorageBuffers;
     std::vector<VkDeviceMemory> m_shaderStorageBuffersMemory;
