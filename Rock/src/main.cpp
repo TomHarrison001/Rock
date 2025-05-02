@@ -1,11 +1,6 @@
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #include <iostream>
 #include <fstream>
-#include <stdexcept>
 #include <vector>
-#include <cstdint>
 #include <optional>
 #include <set>
 #include <limits>
@@ -17,6 +12,8 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#include "window/window.hpp"
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -122,16 +119,7 @@ public:
 private:
     void initWindow()
     {
-        if (!glfwInit())
-            return;
-
-        /* Removes default OpenGL api */
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-        m_window = glfwCreateWindow(m_width, m_height, "Vulkan", nullptr, nullptr);
-        glfwSetWindowUserPointer(m_window, this);
-        glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
-
+        m_window = new Window();
         m_lastTime = glfwGetTime();
     }
 
@@ -161,7 +149,7 @@ private:
 
     void mainLoop()
     {
-        while (!glfwWindowShouldClose(m_window))
+        while (!m_window->shouldClose())
         {
             glfwPollEvents();
             drawFrame();
@@ -207,8 +195,6 @@ private:
             DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
         vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
         vkDestroyInstance(m_instance, nullptr);
-        glfwDestroyWindow(m_window);
-        glfwTerminate();
     }
 
     void createInstance()
@@ -264,7 +250,7 @@ private:
 
     void createSurface()
     {
-        if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS)
+        if (glfwCreateWindowSurface(m_instance, m_window->getWindow(), nullptr, &m_surface) != VK_SUCCESS)
             throw std::runtime_error("Failed to create window surface.");
     }
 
@@ -397,10 +383,10 @@ private:
     {
         int width = 0;
         int height = 0;
-        glfwGetFramebufferSize(m_window, &width, &height);
+        glfwGetFramebufferSize(m_window->getWindow(), &width, &height);
         while (width == 0 || height == 0)
         {
-            glfwGetFramebufferSize(m_window, &width, &height);
+            glfwGetFramebufferSize(m_window->getWindow(), &width, &height);
             glfwWaitEvents();
         }
 
@@ -1182,13 +1168,7 @@ private:
         if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
             return capabilities.currentExtent;
 
-        int width, height;
-        glfwGetFramebufferSize(m_window, &width, &height);
-
-        VkExtent2D actualExtent = {
-            static_cast<uint32_t>(width),
-            static_cast<uint32_t>(height)
-        };
+        VkExtent2D actualExtent = m_window->getExtent();
 
         actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
         actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
@@ -1384,7 +1364,7 @@ private:
     }
 
 private:
-    GLFWwindow* m_window;
+    Window* m_window;
     const uint32_t m_width = 720;
     const uint32_t m_height = 480;
     const uint32_t m_particleCount = 8192;
