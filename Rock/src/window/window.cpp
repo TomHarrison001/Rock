@@ -35,7 +35,7 @@ void Window::framebufferResizeCallback(GLFWwindow* window, int width, int height
 	winRef->m_resized = true;
 	winRef->m_settings.width = width;
 	winRef->m_settings.height = height;
-	winRef->m_settings.aspectRatio = width / height;
+	winRef->m_settings.aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 }
 
 void Window::createSurface(VkInstance instance, VkSurfaceKHR* surface)

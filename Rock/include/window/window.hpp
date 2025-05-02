@@ -3,11 +3,10 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <cstdint>
 #include <stdexcept>
 
 /* \struct WindowSettings
-*  \brief Stores the settings of a window
+*  \brief stores the settings of a window
 */
 struct WindowSettings
 {
@@ -56,6 +55,7 @@ public:
 	uint32_t getHeight() const { return m_settings.height; } //!< get window height from settings
 	bool getResized() const { return m_resized; } //!< returns bool of if the window was resized
 	void setResized(bool resized) { m_resized = resized; } //!< returns bool of if the window was resized
+	float getAspectRatio() const { return m_settings.aspectRatio; } //!< get window aspect ratio from settings
 	VkExtent2D getExtent() { return { static_cast<uint32_t>(m_settings.width), static_cast<uint32_t>(m_settings.height) }; } //!< returns the actual extent of the window
 private:
 	GLFWwindow* m_window; //!< glfw window

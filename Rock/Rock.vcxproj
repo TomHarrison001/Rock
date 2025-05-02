@@ -143,6 +143,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\core\device.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\window\window.cpp" />
   </ItemGroup>
@@ -152,6 +153,7 @@
     <None Include="res\shaders\main.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\core\device.hpp" />
     <ClInclude Include="include\window\window.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -19,6 +19,12 @@
     <Filter Include="Source Files\window">
       <UniqueIdentifier>{a5cd3c1a-fe55-46c9-b62e-ca9680de32ce}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\core">
+      <UniqueIdentifier>{e2264ae8-f8f3-462b-8c29-a9ef5024569a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\core">
+      <UniqueIdentifier>{4c018a04-c910-47f9-a000-726d9a8107ce}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -26,6 +32,9 @@
     </ClCompile>
     <ClCompile Include="src\window\window.cpp">
       <Filter>Source Files\window</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\device.cpp">
+      <Filter>Source Files\core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -42,6 +51,9 @@
   <ItemGroup>
     <ClInclude Include="include\window\window.hpp">
       <Filter>Header Files\window</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\device.hpp">
+      <Filter>Header Files\core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
