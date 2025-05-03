@@ -25,6 +25,12 @@
     <Filter Include="Source Files\core">
       <UniqueIdentifier>{4c018a04-c910-47f9-a000-726d9a8107ce}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\rendering">
+      <UniqueIdentifier>{1154cddb-01f2-458b-9e87-ade6b16d54d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\rendering">
+      <UniqueIdentifier>{b5eb1cfa-5e78-414d-9b69-25a24e35fc95}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -35,6 +41,9 @@
     </ClCompile>
     <ClCompile Include="src\core\device.cpp">
       <Filter>Source Files\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\swapchain.cpp">
+      <Filter>Source Files\rendering</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -54,6 +63,9 @@
     </ClInclude>
     <ClInclude Include="include\core\device.hpp">
       <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\swapchain.hpp">
+      <Filter>Header Files\rendering</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

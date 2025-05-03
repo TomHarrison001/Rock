@@ -22,8 +22,8 @@ struct SwapChainSupportDetails
 */
 struct QueueFamilyIndices
 {
-    std::optional<uint32_t> graphicsFamily; // index of physical device queue family supporting VK_QUEUE_GRAPHICS_BIT and VK_QUEUE_COMPUTE_BIT
-    std::optional<uint32_t> presentFamily; // index of physical device queue family supporting present
+    std::optional<uint32_t> graphicsFamily; //!< index of physical device queue family supporting VK_QUEUE_GRAPHICS_BIT and VK_QUEUE_COMPUTE_BIT
+    std::optional<uint32_t> presentFamily; //!< index of physical device queue family supporting present
     bool isComplete() const { return graphicsFamily.has_value() && presentFamily.has_value(); } //!< returns if physical device supports graphics, compute and present
 };
 
@@ -39,8 +39,8 @@ public:
     const bool enableValidationLayers = true;
 #endif
 
-    Device(Window* window); // constructor
-    ~Device(); // destructor
+    Device(Window* window); //!< constructor
+    ~Device(); //!< destructor
     Device(const Device&) = delete; //!< copy constructor
     Device(const Device&&) = delete; //!< move constructor
     Device& operator=(const Device&) = delete; //!< copy assignment
@@ -54,13 +54,15 @@ private:
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 public:
-    Window* getWindow() { return m_window; } //!< returns the window object reference
-    VkSurfaceKHR getSurface() { return m_surface; } //!< returns the surface
-    VkDevice getDevice() { return m_device; } //!< returns the device
-    VkQueue getRenderQueue() { return m_renderQueue; } //!< returns the render queue
-    VkQueue getComputeQueue() { return m_computeQueue; } //!< returns the compute queue
-    VkQueue getPresentQueue() { return m_presentQueue; } //!< returns the present queue
-    VkCommandPool getCommandPool() { return m_commandPool; } //!< returns the command pool
+    GLFWwindow* getWindow() { return m_window->getWindow(); } //!< returns the glfw window reference
+    bool getWindowShouldClose() { return m_window->shouldClose(); } //!< returns if the glfw window should close
+    VkExtent2D getWindowExtent() { return m_window->getExtent(); } //!< returns the glfw window extent
+    VkSurfaceKHR getSurface() const { return m_surface; } //!< returns the surface
+    VkDevice getDevice() const { return m_device; } //!< returns the device
+    VkQueue getRenderQueue() const { return m_renderQueue; } //!< returns the render queue
+    VkQueue getComputeQueue() const { return m_computeQueue; } //!< returns the compute queue
+    VkQueue getPresentQueue() const { return m_presentQueue; } //!< returns the present queue
+    VkCommandPool getCommandPool() const { return m_commandPool; } //!< returns the command pool
 
     SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(m_physicalDevice); } //!< returns the swap chain support
     QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(m_physicalDevice); } //!< returns the queue families
@@ -83,6 +85,8 @@ public:
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties); //!< finds memory index match input properties and filters
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory); //!< creates buffer, allocates memory and binds with device
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size); //!< copies buffer; used for creating staged buffers before copying to buffer array (e.g. ssbos)
+    VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features); //!< finds supported format favouring VK_IMAGE_TILING_LINEAR
+    void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory); //!< creates an image and binds ith with the device to device memory
 private:
     Window* m_window; //!< window object pointer
     VkInstance m_instance; //!< vulkan instance
