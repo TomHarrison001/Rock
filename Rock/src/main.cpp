@@ -1,4 +1,3 @@
-#include <fstream>
 #include <limits>
 #include <array>
 #include <random>
@@ -8,40 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "rendering/swapchain.hpp"
-
-struct Particle
-{
-    glm::vec2 position;
-    glm::vec2 velocity;
-    glm::vec4 colour;
-
-    static VkVertexInputBindingDescription getBindingDescription()
-    {
-        VkVertexInputBindingDescription bindingDescription{};
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(Particle);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-        return bindingDescription;
-    }
-
-    static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions()
-    {
-        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
-
-        attributeDescriptions[0].binding = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(Particle, position);
-
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Particle, colour);
-
-        return attributeDescriptions;
-    }
-};
+#include "rendering/pipeline.hpp"
 
 struct UniformBufferObject {
     float u_deltaTime = 1.f;
@@ -52,24 +18,18 @@ class Application
 public:
     void run()
     {
-        initWindow();
-        initVulkan();
+        initApplication();
         mainLoop();
         cleanup();
     }
 
 private:
-    void initWindow()
+    void initApplication()
     {
-        Window* window = new Window();
-        m_device = new Device(window);
+        m_device = new Device();
         m_swapchain = new Swapchain(m_device);
-        window = nullptr;
         m_lastTime = glfwGetTime();
-    }
 
-    void initVulkan()
-    {
         createComputeDescriptorSetLayout();
         createRenderPipeline();
         createComputePipeline();
@@ -83,7 +43,7 @@ private:
 
     void mainLoop()
     {
-        while (!m_device->getWindowShouldClose())
+        while (!m_device->getWindow()->shouldClose())
         {
             glfwPollEvents();
             drawFrame();
@@ -97,9 +57,7 @@ private:
 
     void cleanup()
     {
-        vkDestroyPipeline(m_device->getDevice(), m_renderPipeline, nullptr);
         vkDestroyPipelineLayout(m_device->getDevice(), m_renderPipelineLayout, nullptr);
-        vkDestroyPipeline(m_device->getDevice(), m_computePipeline, nullptr);
         vkDestroyPipelineLayout(m_device->getDevice(), m_computePipelineLayout, nullptr);
         for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
         {
@@ -113,18 +71,23 @@ private:
             vkDestroyBuffer(m_device->getDevice(), m_shaderStorageBuffers[i], nullptr);
             vkFreeMemory(m_device->getDevice(), m_shaderStorageBuffersMemory[i], nullptr);
         }
+        delete m_graphicsPipeline;
+        m_graphicsPipeline = nullptr;
+        delete m_computePipeline;
+        m_computePipeline = nullptr;
+        //delete m_device;
         m_device = nullptr;
         m_swapchain = nullptr;
     }
 
     void recreateSwapChain()
     {
-        VkExtent2D extent = m_device->getWindowExtent();
+        VkExtent2D extent = m_device->getWindow()->getExtent();
         while (extent.width == 0 || extent.height == 0)
         {
-            extent = m_device->getWindowExtent();
+            extent = m_device->getWindow()->getExtent();
             glfwWaitEvents();
-        }
+    }
 
         vkDeviceWaitIdle(m_device->getDevice());
 
@@ -197,98 +160,6 @@ private:
 
     void createRenderPipeline()
     {
-        auto vertShaderCode = readFile("./res/shaders/vert.spv");
-        auto fragShaderCode = readFile("./res/shaders/frag.spv");
-
-        VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-        VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
-
-        VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
-        vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        vertShaderStageInfo.module = vertShaderModule;
-        vertShaderStageInfo.pName = "main"; // function to invoke; i.e. entrypoint
-
-        VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
-        fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        fragShaderStageInfo.module = fragShaderModule;
-        fragShaderStageInfo.pName = "main"; // function to invoke; i.e. entrypoint
-
-        VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
-
-        auto bindingDescription = Particle::getBindingDescription();
-        auto attributeDescriptions = Particle::getAttributeDescriptions();
-        VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-        vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputInfo.vertexBindingDescriptionCount = 1;
-        vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-        vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-
-        VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-        inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-        inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-        VkPipelineViewportStateCreateInfo viewportState{};
-        viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportState.viewportCount = 1;
-        viewportState.scissorCount = 1;
-
-        VkPipelineRasterizationStateCreateInfo rasteriser{};
-        rasteriser.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasteriser.depthClampEnable = VK_FALSE;
-        rasteriser.rasterizerDiscardEnable = VK_FALSE;
-        rasteriser.polygonMode = VK_POLYGON_MODE_FILL; // fill the area of the polygon with fragments
-        rasteriser.lineWidth = 1.f;
-        rasteriser.cullMode = VK_CULL_MODE_BACK_BIT;
-        rasteriser.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // counter clockwise due to the Y-flip in the projection matrix
-        rasteriser.depthBiasEnable = VK_FALSE;
-        rasteriser.depthBiasConstantFactor = 0.f; // optional
-        rasteriser.depthBiasClamp = 0.f; // optional
-        rasteriser.depthBiasSlopeFactor = 0.f; // optional
-
-        VkPipelineMultisampleStateCreateInfo multisampling{};
-        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-        multisampling.minSampleShading = 1.f; // optional
-        multisampling.pSampleMask = nullptr; // optional
-        multisampling.alphaToCoverageEnable = VK_FALSE; // optional
-        multisampling.alphaToOneEnable = VK_FALSE; // optional
-
-        VkPipelineColorBlendAttachmentState colourBlendAttachment{};
-        colourBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        colourBlendAttachment.blendEnable = VK_TRUE;
-        colourBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-        colourBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-        colourBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        colourBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-        colourBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        colourBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-
-        VkPipelineColorBlendStateCreateInfo colourBlending{};
-        colourBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        colourBlending.logicOpEnable = VK_FALSE; // VK_TRUE for alpha blending
-        colourBlending.logicOp = VK_LOGIC_OP_COPY; // optional; specify bitwise operation for alpha blending
-        colourBlending.attachmentCount = 1;
-        colourBlending.pAttachments = &colourBlendAttachment;
-        colourBlending.blendConstants[0] = 0.f; // optional
-        colourBlending.blendConstants[1] = 0.f; // optional
-        colourBlending.blendConstants[2] = 0.f; // optional
-        colourBlending.blendConstants[3] = 0.f; // optional
-
-        std::vector<VkDynamicState> dynamicStates = {
-            VK_DYNAMIC_STATE_VIEWPORT,
-            VK_DYNAMIC_STATE_SCISSOR
-        };
-
-        VkPipelineDynamicStateCreateInfo dynamicState{};
-        dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-        dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
-        dynamicState.pDynamicStates = dynamicStates.data();
-
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 0;
@@ -299,42 +170,25 @@ private:
         if (vkCreatePipelineLayout(m_device->getDevice(), &pipelineLayoutInfo, nullptr, &m_renderPipelineLayout) != VK_SUCCESS)
             throw std::runtime_error("Failed to create render pipeline layout.");
 
-        VkGraphicsPipelineCreateInfo pipelineInfo{};
-        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.stageCount = 2;
-        pipelineInfo.pStages = shaderStages;
-        pipelineInfo.pVertexInputState = &vertexInputInfo;
-        pipelineInfo.pInputAssemblyState = &inputAssembly;
-        pipelineInfo.pViewportState = &viewportState;
-        pipelineInfo.pRasterizationState = &rasteriser;
-        pipelineInfo.pMultisampleState = &multisampling;
-        pipelineInfo.pColorBlendState = &colourBlending;
-        pipelineInfo.pDynamicState = &dynamicState;
-        pipelineInfo.layout = m_renderPipelineLayout;
-        pipelineInfo.renderPass = m_swapchain->getRenderPass();
-        pipelineInfo.subpass = 0;
-        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        pipelineInfo.basePipelineIndex = -1; // optional
+        PipelineSettings pipelineSettings{};
+        Pipeline::defaultPipelineSettings(pipelineSettings);
+        pipelineSettings.inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        pipelineSettings.rasteriser.cullMode = VK_CULL_MODE_BACK_BIT;
+        pipelineSettings.rasteriser.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // counter clockwise due to the Y-flip in the projection matrix
+        pipelineSettings.colourBlendAttachment.blendEnable = VK_TRUE;
+        pipelineSettings.colourBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+        pipelineSettings.colourBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        pipelineSettings.colourBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        pipelineSettings.colourBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        pipelineSettings.pipelineLayout = m_renderPipelineLayout;
+        pipelineSettings.renderPass = m_swapchain->getRenderPass();
+        pipelineSettings.subpass = 0;
 
-        if (vkCreateGraphicsPipelines(m_device->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_renderPipeline) != VK_SUCCESS)
-            throw std::runtime_error("Failed to create render pipeline.");
-
-        vkDestroyShaderModule(m_device->getDevice(), vertShaderModule, nullptr);
-        vkDestroyShaderModule(m_device->getDevice(), fragShaderModule, nullptr);
+        m_graphicsPipeline = new Pipeline(m_device, pipelineSettings, "./res/shaders/vert.spv", "./res/shaders/frag.spv");
     }
 
     void createComputePipeline()
     {
-        auto compShaderCode = readFile("./res/shaders/comp.spv");
-
-        VkShaderModule compShaderModule = createShaderModule(compShaderCode);
-
-        VkPipelineShaderStageCreateInfo compShaderStageInfo{};
-        compShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        compShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-        compShaderStageInfo.module = compShaderModule;
-        compShaderStageInfo.pName = "main";
-
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
@@ -345,15 +199,10 @@ private:
         if (vkCreatePipelineLayout(m_device->getDevice(), &pipelineLayoutInfo, nullptr, &m_computePipelineLayout) != VK_SUCCESS)
             throw std::runtime_error("Failed to create compute pipeline layout.");
 
-        VkComputePipelineCreateInfo pipelineInfo{};
-        pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-        pipelineInfo.layout = m_computePipelineLayout;
-        pipelineInfo.stage = compShaderStageInfo;
+        PipelineSettings pipelineSettings{};
+        pipelineSettings.pipelineLayout = m_computePipelineLayout;
 
-        if (vkCreateComputePipelines(m_device->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_computePipeline) != VK_SUCCESS)
-            throw std::runtime_error("Failed to create compute pipeline.");
-
-        vkDestroyShaderModule(m_device->getDevice(), compShaderModule, nullptr);
+        m_computePipeline = new Pipeline(m_device, pipelineSettings, "./res/shaders/comp.spv");
     }
 
     void createShaderStorageBuffers()
@@ -541,11 +390,11 @@ private:
         submitInfo.pCommandBuffers = &m_computeCommandBuffers[m_swapchain->getCurrentFrame()];
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = &m_swapchain->getComputeFinishedSemaphore();
-        
+
         if (vkQueueSubmit(m_device->getComputeQueue(), 1, &submitInfo, m_swapchain->getComputeInFlightFence()) != VK_SUCCESS)
             throw std::runtime_error("Failed to submit compute command buffer.");
 
-        vkWaitForFences(m_device->getDevice(), 1, &m_swapchain->getRenderInFlightFence(), VK_TRUE, UINT64_MAX);
+        vkWaitForFences(m_device->getDevice(), 1, &m_swapchain->getGraphicsInFlightFence(), VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(m_device->getDevice(), m_swapchain->getSwapchain(), UINT64_MAX, m_swapchain->getImageAvailableSemaphore(), VK_NULL_HANDLE, &imageIndex);
@@ -558,14 +407,14 @@ private:
         if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
             throw std::runtime_error("Failed to acquire swap chain image.");
 
-        vkResetFences(m_device->getDevice(), 1, &m_swapchain->getRenderInFlightFence());
+        vkResetFences(m_device->getDevice(), 1, &m_swapchain->getGraphicsInFlightFence());
 
         vkResetCommandBuffer(m_renderCommandBuffers[m_swapchain->getCurrentFrame()], 0);
         recordRenderCommandBuffer(m_renderCommandBuffers[m_swapchain->getCurrentFrame()], imageIndex);
 
-        VkSemaphore waitSemaphores[] = { m_swapchain->getComputeFinishedSemaphore(), m_swapchain->getImageAvailableSemaphore()};
+        VkSemaphore waitSemaphores[] = { m_swapchain->getComputeFinishedSemaphore(), m_swapchain->getImageAvailableSemaphore() };
         VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        VkSemaphore signalSemaphores[] = { m_swapchain->getRenderFinishedSemaphore() };
+        VkSemaphore signalSemaphores[] = { m_swapchain->getGraphicsFinishedSemaphore() };
         submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.waitSemaphoreCount = 2;
@@ -576,7 +425,7 @@ private:
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        if (vkQueueSubmit(m_device->getRenderQueue(), 1, &submitInfo, m_swapchain->getRenderInFlightFence()) != VK_SUCCESS)
+        if (vkQueueSubmit(m_device->getRenderQueue(), 1, &submitInfo, m_swapchain->getGraphicsInFlightFence()) != VK_SUCCESS)
             throw std::runtime_error("Failed to submit draw command buffer.");
 
         VkSwapchainKHR swapchains[] = { m_swapchain->getSwapchain()};
@@ -602,20 +451,6 @@ private:
         m_swapchain->setCurrentFrame((m_swapchain->getCurrentFrame() + 1) % Swapchain::MAX_FRAMES_IN_FLIGHT);
     }
 
-    VkShaderModule createShaderModule(const std::vector<char>& code)
-    {
-        VkShaderModuleCreateInfo ci{};
-        ci.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        ci.codeSize = code.size();
-        ci.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-        VkShaderModule shaderModule;
-        if (vkCreateShaderModule(m_device->getDevice(), &ci, nullptr, &shaderModule) != VK_SUCCESS)
-            throw std::runtime_error("Failed to create shader module.");
-
-        return shaderModule;
-    }
-
     void recordRenderCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
     {
         VkCommandBufferBeginInfo beginInfo{};
@@ -637,7 +472,7 @@ private:
         renderPassInfo.pClearValues = &clearColour;
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // vkCmd commands return void so no error handling until recording is finished
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_renderPipeline);
+        m_graphicsPipeline->bindGraphics(commandBuffer);
 
         VkViewport viewport{};
         viewport.x = 0.f;
@@ -671,7 +506,7 @@ private:
         if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
             throw std::runtime_error("failed to begin recording compute command buffer!");
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipeline);
+        m_computePipeline->bindCompute(commandBuffer);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipelineLayout, 0, 1, &m_computeDescriptorSets[m_swapchain->getCurrentFrame()], 0, nullptr);
         vkCmdDispatch(commandBuffer, m_particleCount / 256, 1, 1);
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
@@ -686,32 +521,11 @@ private:
         memcpy(m_uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
     }
 
-    static std::vector<char> readFile(const std::string& filename)
-    {
-        std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-        if (!file.is_open())
-            throw std::runtime_error("Failed to open file.");
-
-        size_t fileSize = static_cast<size_t>(file.tellg());
-        std::vector<char> buffer(fileSize);
-
-        file.seekg(0);
-        file.read(buffer.data(), fileSize);
-        file.close();
-
-        return buffer;
-    }
-
-    static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
-    {
-        auto app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
-        app->m_framebufferResized = true;
-    }
-
 private:
     Device* m_device;
     Swapchain* m_swapchain;
+    Pipeline* m_graphicsPipeline;
+    Pipeline* m_computePipeline;
     const uint32_t m_particleCount = 8192;
     
     VkDescriptorPool m_descriptorPool;
@@ -719,10 +533,8 @@ private:
     std::vector<VkDescriptorSet> m_computeDescriptorSets;
     VkDescriptorSetLayout m_renderDescriptorSetLayout;
     VkPipelineLayout m_renderPipelineLayout;
-    VkPipeline m_renderPipeline;
     VkDescriptorSetLayout m_computeDescriptorSetLayout;
     VkPipelineLayout m_computePipelineLayout;
-    VkPipeline m_computePipeline;
     std::vector<VkCommandBuffer> m_renderCommandBuffers;
     std::vector<VkCommandBuffer> m_computeCommandBuffers;
     

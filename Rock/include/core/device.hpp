@@ -39,6 +39,7 @@ public:
     const bool enableValidationLayers = true;
 #endif
 
+    Device(); //!< default constructor
     Device(Window* window); //!< constructor
     ~Device(); //!< destructor
     Device(const Device&) = delete; //!< copy constructor
@@ -54,9 +55,7 @@ private:
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 public:
-    GLFWwindow* getWindow() { return m_window->getWindow(); } //!< returns the glfw window reference
-    bool getWindowShouldClose() { return m_window->shouldClose(); } //!< returns if the glfw window should close
-    VkExtent2D getWindowExtent() { return m_window->getExtent(); } //!< returns the glfw window extent
+    Window* getWindow() const { return m_window; } //!< returns the window object
     VkSurfaceKHR getSurface() const { return m_surface; } //!< returns the surface
     VkDevice getDevice() const { return m_device; } //!< returns the device
     VkQueue getRenderQueue() const { return m_renderQueue; } //!< returns the render queue
@@ -67,6 +66,7 @@ public:
     SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(m_physicalDevice); } //!< returns the swap chain support
     QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(m_physicalDevice); } //!< returns the queue families
 private:
+    void initDevice(); //!< initialises the device
     void createInstance(); //!< creates the instance
     void setupDebugMessenger(); //!< performs the setup required for the debug utils messenger EXT
     void createSurface(); //!< creates the surface using the window

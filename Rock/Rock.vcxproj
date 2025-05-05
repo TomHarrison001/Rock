@@ -145,6 +145,7 @@
   <ItemGroup>
     <ClCompile Include="src\core\device.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\rendering\pipeline.cpp" />
     <ClCompile Include="src\rendering\swapchain.cpp" />
     <ClCompile Include="src\window\window.cpp" />
   </ItemGroup>
@@ -155,7 +156,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\core\device.hpp" />
+    <ClInclude Include="include\rendering\pipeline.hpp" />
     <ClInclude Include="include\rendering\swapchain.hpp" />
+    <ClInclude Include="include\utils\resources.hpp" />
     <ClInclude Include="include\window\window.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

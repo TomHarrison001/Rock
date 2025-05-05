@@ -28,14 +28,15 @@ void destroyDebugUtilsMessenger(VkInstance instance, VkDebugUtilsMessengerEXT de
         func(instance, debugMessenger, pAllocator);
 }
 
+Device::Device()
+{
+    m_window = new Window();
+    this->initDevice();
+}
+
 Device::Device(Window* window) : m_window(window)
 {
-    createInstance();
-    setupDebugMessenger();
-    createSurface();
-    pickPhysicalDevice();
-    createLogicalDevice();
-    createCommandPool();
+    this->initDevice();
 }
 
 Device::~Device()
@@ -49,6 +50,16 @@ Device::~Device()
 
     delete m_window;
     m_window = nullptr;
+}
+
+void Device::initDevice()
+{
+    createInstance();
+    setupDebugMessenger();
+    createSurface();
+    pickPhysicalDevice();
+    createLogicalDevice();
+    createCommandPool();
 }
 
 void Device::createInstance()

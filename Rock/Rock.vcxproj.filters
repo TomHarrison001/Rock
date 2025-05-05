@@ -31,6 +31,9 @@
     <Filter Include="Header Files\rendering">
       <UniqueIdentifier>{b5eb1cfa-5e78-414d-9b69-25a24e35fc95}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\utils">
+      <UniqueIdentifier>{fac460d3-71a0-49ab-8519-39a64a407ab3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -43,6 +46,9 @@
       <Filter>Source Files\core</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\swapchain.cpp">
+      <Filter>Source Files\rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\pipeline.cpp">
       <Filter>Source Files\rendering</Filter>
     </ClCompile>
   </ItemGroup>
@@ -65,6 +71,12 @@
       <Filter>Header Files\core</Filter>
     </ClInclude>
     <ClInclude Include="include\rendering\swapchain.hpp">
+      <Filter>Header Files\rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\resources.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\pipeline.hpp">
       <Filter>Header Files\rendering</Filter>
     </ClInclude>
   </ItemGroup>

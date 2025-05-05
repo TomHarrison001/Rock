@@ -45,11 +45,12 @@ Swapchain::~Swapchain()
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
         vkDestroySemaphore(m_device->getDevice(), m_imageAvailableSemaphores[i], nullptr);
-        vkDestroySemaphore(m_device->getDevice(), m_renderFinishedSemaphores[i], nullptr);
+        vkDestroySemaphore(m_device->getDevice(), m_graphicsFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(m_device->getDevice(), m_computeFinishedSemaphores[i], nullptr);
-        vkDestroyFence(m_device->getDevice(), m_renderInFlightFences[i], nullptr);
+        vkDestroyFence(m_device->getDevice(), m_graphicsInFlightFences[i], nullptr);
         vkDestroyFence(m_device->getDevice(), m_computeInFlightFences[i], nullptr);
     }
+    m_device = nullptr;
 }
 
 void Swapchain::createSwapchain(VkSwapchainKHR oldSwapchain)
@@ -135,13 +136,13 @@ void Swapchain::createImageViews()
     }
 }
 
-void Swapchain::createResources(resourceType type)
+void Swapchain::createResources(Resource type)
 {
-    VkFormat format = (type == COLOUR) ? m_swapchainImageFormat : m_swapchainDepthFormat;
-    VkImageUsageFlags usage = (type == COLOUR) ?
+    VkFormat format = (type == Resource::COLOUR) ? m_swapchainImageFormat : m_swapchainDepthFormat;
+    VkImageUsageFlags usage = (type == Resource::COLOUR) ?
         VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT :
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    VkImageAspectFlags flags = (type == COLOUR) ?
+    VkImageAspectFlags flags = (type == Resource::COLOUR) ?
         VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_DEPTH_BIT;
 
     for (int i = 0; i < m_swapchainImages.size(); i++)
@@ -220,9 +221,9 @@ void Swapchain::createFramebuffers()
 void Swapchain::createSyncObjects()
 {
     m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    m_graphicsFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     m_computeFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    m_renderInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    m_graphicsInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
     m_computeInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
     VkSemaphoreCreateInfo semaphoreInfo{};
@@ -235,8 +236,8 @@ void Swapchain::createSyncObjects()
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
         if (vkCreateSemaphore(m_device->getDevice(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(m_device->getDevice(), &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(m_device->getDevice(), &fenceInfo, nullptr, &m_renderInFlightFences[i]) != VK_SUCCESS)
+            vkCreateSemaphore(m_device->getDevice(), &semaphoreInfo, nullptr, &m_graphicsFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateFence(m_device->getDevice(), &fenceInfo, nullptr, &m_graphicsInFlightFences[i]) != VK_SUCCESS)
             throw std::runtime_error("Failed to create render synchronisation objects for a frame.");
         if (vkCreateSemaphore(m_device->getDevice(), &semaphoreInfo, nullptr, &m_computeFinishedSemaphores[i]) != VK_SUCCESS ||
             vkCreateFence(m_device->getDevice(), &fenceInfo, nullptr, &m_computeInFlightFences[i]) != VK_SUCCESS)
@@ -291,7 +292,7 @@ VkExtent2D Swapchain::chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities)
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
         return capabilities.currentExtent;
 
-    VkExtent2D actualExtent = m_device->getWindowExtent();
+    VkExtent2D actualExtent = m_device->getWindow()->getExtent();
 
     actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
     actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
@@ -306,4 +307,45 @@ VkFormat Swapchain::findDepthFormat()
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );
+}
+
+VkResult Swapchain::acquireNextImage(uint32_t* imageIndex)
+{
+    return vkAcquireNextImageKHR(m_device->getDevice(), m_swapchain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, imageIndex);
+}
+
+VkResult Swapchain::submitCommandBuffers(VkCommandBuffer commandBuffer, uint32_t* imageIndex)
+{
+    VkSemaphore waitSemaphores[] = { m_computeFinishedSemaphores[m_currentFrame], m_imageAvailableSemaphores[m_currentFrame] };
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    VkSemaphore signalSemaphores[] = { m_graphicsFinishedSemaphores[m_currentFrame] };
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.waitSemaphoreCount = 2;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStages;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(m_device->getRenderQueue(), 1, &submitInfo, m_graphicsInFlightFences[m_currentFrame]) != VK_SUCCESS)
+        throw std::runtime_error("Failed to submit draw command buffer.");
+
+    VkSwapchainKHR swapchains[] = { m_swapchain };
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = signalSemaphores;
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapchains;
+    presentInfo.pImageIndices = imageIndex;
+    presentInfo.pResults = nullptr; // optional
+
+    VkResult result = vkQueuePresentKHR(m_device->getPresentQueue(), &presentInfo);
+
+    m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+    return result;
 }

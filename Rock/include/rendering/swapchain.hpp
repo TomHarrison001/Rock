@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/device.hpp"
+#include "utils/resources.hpp"
 
 #include <vulkan/vulkan.h>
 #include <memory>
@@ -29,20 +30,21 @@ public:
     void setCurrentFrame(uint32_t frame) { m_currentFrame = frame; } //!< current frame setter method
     uint32_t getCurrentFrame() const { return m_currentFrame; } //!< current frame getter method
     VkSemaphore& getImageAvailableSemaphore() { return m_imageAvailableSemaphores[m_currentFrame]; } //!< image available semaphore getter method for current frame
-    VkSemaphore& getRenderFinishedSemaphore() { return m_renderFinishedSemaphores[m_currentFrame]; } //!< render finished semaphore getter method for current frame
+    VkSemaphore& getGraphicsFinishedSemaphore() { return m_graphicsFinishedSemaphores[m_currentFrame]; } //!< graphics finished semaphore getter method for current frame
     VkSemaphore& getComputeFinishedSemaphore() { return m_computeFinishedSemaphores[m_currentFrame]; } //!< compute finished semaphore getter method for current frame
-    VkFence& getRenderInFlightFence() { return m_renderInFlightFences[m_currentFrame]; } //!< render in flight fence getter method for current frame
+    VkFence& getGraphicsInFlightFence() { return m_graphicsInFlightFences[m_currentFrame]; } //!< graphics in flight fence getter method for current frame
     VkFence& getComputeInFlightFence() { return m_computeInFlightFences[m_currentFrame]; } //!< compute in flight fence getter method for current frame
     VkFormat findDepthFormat(); //!< finds device supported depth format
+    VkResult acquireNextImage(uint32_t* imageIndex); //!< runs vkAcquireNextImageKHR, stores the image index and returns a VkResult
+    VkResult submitCommandBuffers(VkCommandBuffer commandBuffer, uint32_t* imageIndex); //!< submits command buffers to device queue
     bool operator!=(const Swapchain* swapchain) const {
         return swapchain->getSwapchainImageFormat() != m_swapchainImageFormat ||
             swapchain->getSwapchainDepthFormat() != m_swapchainDepthFormat;
     } //!< used to check if old/new swapchain support the same image and depth formats
-    enum resourceType { COLOUR, DEPTH }; //!< enums for resources
 private:
     void createSwapchain(VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE); //!< defines and initialises the swapchain
     void createImageViews(); //!< creates image views
-    void createResources(resourceType type); //!< creates resources (colour or depth, see resourceType)
+    void createResources(Resource type); //!< creates resources (colour or depth, see resourceType)
     void createRenderPass(); //!< creates render pass
     void createFramebuffers(); //!< initialises framebuffer
     void createSyncObjects(); //!< initialises sync objects (semaphores and fences)
@@ -64,9 +66,9 @@ private:
     
     std::vector<VkFramebuffer> m_swapchainFramebuffers; //!< swapchain framebuffers
     std::vector<VkSemaphore> m_imageAvailableSemaphores; //!< semaphores for image availability
-    std::vector<VkSemaphore> m_renderFinishedSemaphores; //!< semaphores for graphics shaders
+    std::vector<VkSemaphore> m_graphicsFinishedSemaphores; //!< semaphores for graphics shaders
     std::vector<VkSemaphore> m_computeFinishedSemaphores; //!< semaphores for compute shaders
-    std::vector<VkFence> m_renderInFlightFences; //!< fence for graphics
+    std::vector<VkFence> m_graphicsInFlightFences; //!< fence for graphics
     std::vector<VkFence> m_computeInFlightFences; //!< fence for compute
     uint32_t m_currentFrame = 0; //!< stores the current frame
 };
