@@ -48,6 +48,9 @@
     <ClCompile Include="src\rendering\swapchain.cpp">
       <Filter>Source Files\rendering</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\renderer.cpp">
+      <Filter>Source Files\rendering</Filter>
+    </ClCompile>
     <ClCompile Include="src\rendering\pipeline.cpp">
       <Filter>Source Files\rendering</Filter>
     </ClCompile>
@@ -71,6 +74,9 @@
       <Filter>Header Files\core</Filter>
     </ClInclude>
     <ClInclude Include="include\rendering\swapchain.hpp">
+      <Filter>Header Files\rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\renderer.hpp">
       <Filter>Header Files\rendering</Filter>
     </ClInclude>
     <ClInclude Include="include\utils\resources.hpp">

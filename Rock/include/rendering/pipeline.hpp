@@ -52,7 +52,9 @@ public:
 	void bindCompute(VkCommandBuffer commandBuffer); //!< binds pipeline to VK_PIPELINE_BIND_POINT_COMPUTE
 	static void defaultPipelineSettings(PipelineSettings& settings); //!< populates referenced PipelineSettings with default data
 	static void enableAlphaBlending(PipelineSettings& settings); //!< adapts referenced PipelineSettings to enable alpha blending
+	VkPipelineLayout getPipelineLayout() { return m_pipelineLayout; } //!< returns the handle to pipeline layout object
 private:
 	Device* m_device; //!< device object pointer
 	VkPipeline m_pipeline; //!< handle to pipeline object
+	VkPipelineLayout m_pipelineLayout; //!< handle to pipeline layout object
 };

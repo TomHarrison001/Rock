@@ -24,19 +24,13 @@ public:
     VkFormat getSwapchainImageFormat() const { return m_swapchainImageFormat; } //!< used to check that new/old swapchains have the same image format
     VkFormat getSwapchainDepthFormat() const { return m_swapchainDepthFormat; } //!< used to check that new/old swapchains have the same depth format
     VkExtent2D getSwapchainExtent() const { return m_swapchainExtent; } //!< returns the swapchain extent (could be different to window due to surface capabilities)
-    float getSwapchainAspectRatio() { return static_cast<float>(m_swapchainExtent.width) / static_cast<float>(m_swapchainExtent.height); } //!< calculates and returns swapchain aspect ratio
     VkRenderPass getRenderPass() const { return m_renderPass; } //!< returns render pass for the pipeline
     VkFramebuffer getFramebuffer(int index) { return m_swapchainFramebuffers[index]; } //!< returns the framebuffer for the command buffer
-    void setCurrentFrame(uint32_t frame) { m_currentFrame = frame; } //!< current frame setter method
-    uint32_t getCurrentFrame() const { return m_currentFrame; } //!< current frame getter method
-    VkSemaphore& getImageAvailableSemaphore() { return m_imageAvailableSemaphores[m_currentFrame]; } //!< image available semaphore getter method for current frame
-    VkSemaphore& getGraphicsFinishedSemaphore() { return m_graphicsFinishedSemaphores[m_currentFrame]; } //!< graphics finished semaphore getter method for current frame
-    VkSemaphore& getComputeFinishedSemaphore() { return m_computeFinishedSemaphores[m_currentFrame]; } //!< compute finished semaphore getter method for current frame
-    VkFence& getGraphicsInFlightFence() { return m_graphicsInFlightFences[m_currentFrame]; } //!< graphics in flight fence getter method for current frame
-    VkFence& getComputeInFlightFence() { return m_computeInFlightFences[m_currentFrame]; } //!< compute in flight fence getter method for current frame
-    VkFormat findDepthFormat(); //!< finds device supported depth format
-    VkResult acquireNextImage(uint32_t* imageIndex); //!< runs vkAcquireNextImageKHR, stores the image index and returns a VkResult
-    VkResult submitCommandBuffers(VkCommandBuffer commandBuffer, uint32_t* imageIndex); //!< submits command buffers to device queue
+    VkSemaphore& getImageAvailableSemaphore(uint32_t currentFrame) { return m_imageAvailableSemaphores[currentFrame]; } //!< image available semaphore getter method for current frame
+    VkSemaphore& getGraphicsFinishedSemaphore(uint32_t currentFrame) { return m_graphicsFinishedSemaphores[currentFrame]; } //!< graphics finished semaphore getter method for current frame
+    VkSemaphore& getComputeFinishedSemaphore(uint32_t currentFrame) { return m_computeFinishedSemaphores[currentFrame]; } //!< compute finished semaphore getter method for current frame
+    VkFence& getGraphicsInFlightFence(uint32_t currentFrame) { return m_graphicsInFlightFences[currentFrame]; } //!< graphics in flight fence getter method for current frame
+    VkFence& getComputeInFlightFence(uint32_t currentFrame) { return m_computeInFlightFences[currentFrame]; } //!< compute in flight fence getter method for current frame
     bool operator!=(const Swapchain* swapchain) const {
         return swapchain->getSwapchainImageFormat() != m_swapchainImageFormat ||
             swapchain->getSwapchainDepthFormat() != m_swapchainDepthFormat;
@@ -49,6 +43,7 @@ private:
     void createFramebuffers(); //!< initialises framebuffer
     void createSyncObjects(); //!< initialises sync objects (semaphores and fences)
 
+    VkFormat findDepthFormat(); //!< finds device supported depth format
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels); //!< creates an image view
     VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats); //!< chooses best available surface format
     VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes); //!< chooses best available present mode
@@ -70,5 +65,4 @@ private:
     std::vector<VkSemaphore> m_computeFinishedSemaphores; //!< semaphores for compute shaders
     std::vector<VkFence> m_graphicsInFlightFences; //!< fence for graphics
     std::vector<VkFence> m_computeInFlightFences; //!< fence for compute
-    uint32_t m_currentFrame = 0; //!< stores the current frame
 };

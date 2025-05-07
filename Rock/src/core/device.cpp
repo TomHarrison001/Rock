@@ -183,7 +183,7 @@ void Device::createLogicalDevice()
     if (vkCreateDevice(m_physicalDevice, &ci, nullptr, &m_device) != VK_SUCCESS)
         throw std::runtime_error("Failed to create logical device.");
 
-    vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_renderQueue);
+    vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
     vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_computeQueue);
     vkGetDeviceQueue(m_device, indices.presentFamily.value(), 0, &m_presentQueue);
 }
@@ -405,8 +405,8 @@ void Device::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize siz
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    vkQueueSubmit(m_renderQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(m_renderQueue);
+    vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(m_graphicsQueue);
 
     vkFreeCommandBuffers(m_device, m_commandPool, 1, &commandBuffer);
 }

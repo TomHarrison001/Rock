@@ -58,7 +58,7 @@ public:
     Window* getWindow() const { return m_window; } //!< returns the window object
     VkSurfaceKHR getSurface() const { return m_surface; } //!< returns the surface
     VkDevice getDevice() const { return m_device; } //!< returns the device
-    VkQueue getRenderQueue() const { return m_renderQueue; } //!< returns the render queue
+    VkQueue getGraphicsQueue() const { return m_graphicsQueue; } //!< returns the graphics queue
     VkQueue getComputeQueue() const { return m_computeQueue; } //!< returns the compute queue
     VkQueue getPresentQueue() const { return m_presentQueue; } //!< returns the present queue
     VkCommandPool getCommandPool() const { return m_commandPool; } //!< returns the command pool
@@ -94,7 +94,7 @@ private:
     VkSurfaceKHR m_surface; //!< device surface
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE; //!< physical device
     VkDevice m_device; //!< device
-    VkQueue m_renderQueue; //!< render queue
+    VkQueue m_graphicsQueue; //!< graphics queue
     VkQueue m_computeQueue; //!< compute queue
     VkQueue m_presentQueue; //!< present queue
     VkCommandPool m_commandPool; //!< command pool

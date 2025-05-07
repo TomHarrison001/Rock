@@ -5,17 +5,20 @@
 Pipeline::Pipeline(Device* device, const PipelineSettings& settings, const std::string& vertFilepath, const std::string& fragFilepath)
 	: m_device(device)
 {
+    if (settings.pipelineLayout != nullptr) m_pipelineLayout = settings.pipelineLayout;
 	createGraphicsPipeline(settings, vertFilepath, fragFilepath);
 }
 
 Pipeline::Pipeline(Device* device, const PipelineSettings& settings, const std::string& compFilepath)
 	: m_device(device)
 {
+    if (settings.pipelineLayout != nullptr) m_pipelineLayout = settings.pipelineLayout;
 	createComputePipeline(settings, compFilepath);
 }
 
 Pipeline::~Pipeline()
 {
+    vkDestroyPipelineLayout(m_device->getDevice(), m_pipelineLayout, nullptr);
 	vkDestroyPipeline(m_device->getDevice(), m_pipeline, nullptr);
 	m_device = nullptr;
 }
