@@ -143,6 +143,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\core\descriptors.cpp" />
     <ClCompile Include="src\core\device.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\rendering\pipeline.cpp" />
@@ -156,6 +157,7 @@
     <None Include="res\shaders\main.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\core\descriptors.hpp" />
     <ClInclude Include="include\core\device.hpp" />
     <ClInclude Include="include\rendering\pipeline.hpp" />
     <ClInclude Include="include\rendering\renderer.hpp" />

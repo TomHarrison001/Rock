@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "core/descriptors.hpp"
 #include "rendering/pipeline.hpp"
 #include "rendering/renderer.hpp"
 
@@ -27,6 +28,7 @@ private:
     void initApplication()
     {
         m_device = new Device();
+        m_descriptorManager = new DescriptorManager(m_device, Swapchain::MAX_FRAMES_IN_FLIGHT);
         m_renderer = new Renderer(m_device);
         m_lastTime = glfwGetTime();
 
@@ -60,13 +62,12 @@ private:
             vkDestroyBuffer(m_device->getDevice(), m_uniformBuffers[i], nullptr);
             vkFreeMemory(m_device->getDevice(), m_uniformBuffersMemory[i], nullptr);
         }
-        vkDestroyDescriptorPool(m_device->getDevice(), m_descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(m_device->getDevice(), m_computeDescriptorSetLayout, nullptr);
         for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
         {
             vkDestroyBuffer(m_device->getDevice(), m_shaderStorageBuffers[i], nullptr);
             vkFreeMemory(m_device->getDevice(), m_shaderStorageBuffersMemory[i], nullptr);
         }
+        delete m_descriptorManager;
         delete m_renderer;
         m_renderer = nullptr;
         delete m_graphicsPipeline;
@@ -79,88 +80,29 @@ private:
 
     void createDescriptorPool()
     {
-        std::array<VkDescriptorPoolSize, 2> poolSizes{};
-        poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT);
-        poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        poolSizes[1].descriptorCount = static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT) * 2;
-
-        VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT);
-
-        if (vkCreateDescriptorPool(m_device->getDevice(), &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
-            throw std::runtime_error("Failed to create descriptor pool.");
+        m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
+        m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT) * 2);
+        m_descriptorManager->buildDescriptorPool();
     }
 
-    void createRenderDescriptorSetLayout()
+    void createGraphicsDescriptorSetLayout()
     {
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings{};
-        bindings[0].binding = 0;
-        bindings[0].descriptorCount = 1;
-        bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        bindings[0].pImmutableSamplers = nullptr; // optional
-
-        bindings[1].binding = 1;
-        bindings[1].descriptorCount = 1;
-        bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        bindings[1].pImmutableSamplers = nullptr;
-
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
-
-        if (vkCreateDescriptorSetLayout(m_device->getDevice(), &layoutInfo, nullptr, &m_graphicsDescriptorSetLayout) != VK_SUCCESS)
-            throw std::runtime_error("Failed to create graphics descriptor set layout.");
+        m_descriptorManager->addBinding(Stage::GRAPHICS, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+        m_descriptorManager->addBinding(Stage::GRAPHICS, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+        m_descriptorManager->buildDescriptorSetLayout(Stage::GRAPHICS);
     }
 
     void createComputeDescriptorSetLayout()
     {
-        std::array<VkDescriptorSetLayoutBinding, 3> bindings{};
-        bindings[0].binding = 0;
-        bindings[0].descriptorCount = 1;
-        bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-        bindings[0].pImmutableSamplers = nullptr; // optional
-
-        bindings[1].binding = 1;
-        bindings[1].descriptorCount = 1;
-        bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-        bindings[1].pImmutableSamplers = nullptr;
-
-        bindings[2].binding = 2;
-        bindings[2].descriptorCount = 1;
-        bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        bindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-        bindings[2].pImmutableSamplers = nullptr;
-
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
-
-        if (vkCreateDescriptorSetLayout(m_device->getDevice(), &layoutInfo, nullptr, &m_computeDescriptorSetLayout) != VK_SUCCESS)
-            throw std::runtime_error("Failed to create compute descriptor set layout.");
+        m_descriptorManager->addBinding(Stage::COMPUTE, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+        m_descriptorManager->addBinding(Stage::COMPUTE, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+        m_descriptorManager->addBinding(Stage::COMPUTE, 2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+        m_descriptorManager->buildDescriptorSetLayout(Stage::COMPUTE);
     }
     
     void createGraphicsDescriptorSets()
     {
-        std::vector<VkDescriptorSetLayout> layouts(Swapchain::MAX_FRAMES_IN_FLIGHT, m_graphicsDescriptorSetLayout);
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = m_descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT);
-        allocInfo.pSetLayouts = layouts.data();
-
-        m_graphicsDescriptorSets.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
-        if (vkAllocateDescriptorSets(m_device->getDevice(), &allocInfo, m_graphicsDescriptorSets.data()) != VK_SUCCESS)
-            throw std::runtime_error("Failed to allocate descriptor sets.");
+        m_descriptorManager->allocateDescriptorSets(Stage::GRAPHICS);
 
         for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
         {
@@ -169,44 +111,22 @@ private:
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
-            std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[0].dstSet = m_graphicsDescriptorSets[i];
-            descriptorWrites[0].dstBinding = 0; // uniform buffer binding index
-            descriptorWrites[0].dstArrayElement = 0; // first item in array (ubo) to update
-            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[0].descriptorCount = 1;
-            descriptorWrites[0].pBufferInfo = &bufferInfo;
+            m_descriptorManager->addWriteDescriptorSet(Stage::GRAPHICS, 0, &bufferInfo, nullptr);
 
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.imageView = m_textureImageView;
             imageInfo.sampler = m_textureSampler;
 
-            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[1].dstSet = m_graphicsDescriptorSets[i];
-            descriptorWrites[1].dstBinding = 1; // uniform buffer binding index
-            descriptorWrites[1].dstArrayElement = 0; // first item in array (ubo) to update
-            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[1].descriptorCount = 1;
-            descriptorWrites[1].pImageInfo = &imageInfo;
+            m_descriptorManager->addWriteDescriptorSet(Stage::GRAPHICS, 1, nullptr, &imageInfo);
 
-            vkUpdateDescriptorSets(m_device->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+            m_descriptorManager->overwrite(Stage::GRAPHICS, i);
         }
     }
 
     void createComputeDescriptorSets()
     {
-        std::vector<VkDescriptorSetLayout> layouts(Swapchain::MAX_FRAMES_IN_FLIGHT, m_computeDescriptorSetLayout);
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = m_descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT);
-        allocInfo.pSetLayouts = layouts.data();
-
-        m_computeDescriptorSets.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
-        if (vkAllocateDescriptorSets(m_device->getDevice(), &allocInfo, m_computeDescriptorSets.data()) != VK_SUCCESS)
-            throw std::runtime_error("Failed to allocate descriptor sets.");
+        m_descriptorManager->allocateDescriptorSets(Stage::COMPUTE);
 
         for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
         {
@@ -215,42 +135,23 @@ private:
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
-            std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
-            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[0].dstSet = m_computeDescriptorSets[i];
-            descriptorWrites[0].dstBinding = 0; // uniform buffer binding index
-            descriptorWrites[0].dstArrayElement = 0; // first item in array (ubo) to update
-            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[0].descriptorCount = 1;
-            descriptorWrites[0].pBufferInfo = &bufferInfo;
+            m_descriptorManager->addWriteDescriptorSet(Stage::COMPUTE, 0, &bufferInfo, nullptr);
 
             VkDescriptorBufferInfo lastFrameInfo{};
             lastFrameInfo.buffer = m_shaderStorageBuffers[(i - 1) % Swapchain::MAX_FRAMES_IN_FLIGHT];
             lastFrameInfo.offset = 0;
             lastFrameInfo.range = sizeof(Particle) * m_particleCount;
 
-            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[1].dstSet = m_computeDescriptorSets[i];
-            descriptorWrites[1].dstBinding = 1; // uniform buffer binding index
-            descriptorWrites[1].dstArrayElement = 0; // first item in array (ubo) to update
-            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            descriptorWrites[1].descriptorCount = 1;
-            descriptorWrites[1].pBufferInfo = &lastFrameInfo;
+            m_descriptorManager->addWriteDescriptorSet(Stage::COMPUTE, 1, &lastFrameInfo, nullptr);
 
             VkDescriptorBufferInfo currentFrameInfo{};
             currentFrameInfo.buffer = m_shaderStorageBuffers[i];
             currentFrameInfo.offset = 0;
             currentFrameInfo.range = sizeof(Particle) * m_particleCount;
 
-            descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[2].dstSet = m_computeDescriptorSets[i];
-            descriptorWrites[2].dstBinding = 2; // uniform buffer binding index
-            descriptorWrites[2].dstArrayElement = 0; // first item in array (ubo) to update
-            descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            descriptorWrites[2].descriptorCount = 1;
-            descriptorWrites[2].pBufferInfo = &currentFrameInfo;
+            m_descriptorManager->addWriteDescriptorSet(Stage::COMPUTE, 2, &currentFrameInfo, nullptr);
 
-            vkUpdateDescriptorSets(m_device->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+            m_descriptorManager->overwrite(Stage::COMPUTE, i);
         }
     }
 
@@ -289,7 +190,7 @@ private:
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &m_computeDescriptorSetLayout;
+        pipelineLayoutInfo.pSetLayouts = m_descriptorManager->getComputeDescriptorSetLayout();
         pipelineLayoutInfo.pushConstantRangeCount = 0; // optional
         pipelineLayoutInfo.pPushConstantRanges = nullptr; // optional
 
@@ -371,7 +272,7 @@ private:
         updateUniformBuffer(m_renderer->getCurrentFrame());
         vkResetFences(m_device->getDevice(), 1, &m_renderer->getComputeInFlightFence());
         vkResetCommandBuffer(m_renderer->getComputeCommandBuffer(), 0);
-        m_renderer->recordCommandBuffer(Stage::COMPUTE, m_computePipeline, m_particleCount, {}, m_computeDescriptorSets);
+        m_renderer->recordCommandBuffer(Stage::COMPUTE, m_computePipeline, m_particleCount, {}, m_descriptorManager->getDescriptorSets(Stage::COMPUTE));
         m_renderer->submitCommandBuffer(Stage::COMPUTE);
 
         vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getGraphicsInFlightFence(), VK_TRUE, UINT64_MAX);
@@ -397,12 +298,7 @@ private:
     Pipeline* m_computePipeline;
     Renderer* m_renderer;
     const uint32_t m_particleCount = 8192;
-    
-    VkDescriptorPool m_descriptorPool;
-    VkDescriptorSetLayout m_graphicsDescriptorSetLayout;
-    VkDescriptorSetLayout m_computeDescriptorSetLayout;
-    std::vector<VkDescriptorSet> m_graphicsDescriptorSets;
-    std::vector<VkDescriptorSet> m_computeDescriptorSets;
+    DescriptorManager* m_descriptorManager;
     
     std::vector<VkBuffer> m_shaderStorageBuffers;
     std::vector<VkDeviceMemory> m_shaderStorageBuffersMemory;

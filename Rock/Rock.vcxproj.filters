@@ -54,6 +54,9 @@
     <ClCompile Include="src\rendering\pipeline.cpp">
       <Filter>Source Files\rendering</Filter>
     </ClCompile>
+    <ClCompile Include="src\core\descriptors.cpp">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="res\shaders\main.frag">
@@ -84,6 +87,9 @@
     </ClInclude>
     <ClInclude Include="include\rendering\pipeline.hpp">
       <Filter>Header Files\rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\descriptors.hpp">
+      <Filter>Header Files\core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
