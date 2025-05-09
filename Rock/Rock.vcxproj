@@ -157,6 +157,7 @@
     <None Include="res\shaders\main.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\core\application.hpp" />
     <ClInclude Include="include\core\descriptors.hpp" />
     <ClInclude Include="include\core\device.hpp" />
     <ClInclude Include="include\rendering\pipeline.hpp" />
