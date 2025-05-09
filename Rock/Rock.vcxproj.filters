@@ -57,6 +57,9 @@
     <ClCompile Include="src\core\descriptors.cpp">
       <Filter>Source Files\core</Filter>
     </ClCompile>
+    <ClCompile Include="src\computeShaderApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="res\shaders\main.frag">
@@ -93,6 +96,9 @@
     </ClInclude>
     <ClInclude Include="include\core\application.hpp">
       <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\computeShaderApp.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
