@@ -13,12 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\window">
-      <UniqueIdentifier>{8ba283ba-f59a-47ed-8745-3c910f8393a1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\window">
-      <UniqueIdentifier>{a5cd3c1a-fe55-46c9-b62e-ca9680de32ce}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\core">
       <UniqueIdentifier>{e2264ae8-f8f3-462b-8c29-a9ef5024569a}</UniqueIdentifier>
     </Filter>
@@ -34,71 +28,83 @@
     <Filter Include="Header Files\utils">
       <UniqueIdentifier>{fac460d3-71a0-49ab-8519-39a64a407ab3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\window">
+      <UniqueIdentifier>{8ba283ba-f59a-47ed-8745-3c910f8393a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\window">
+      <UniqueIdentifier>{a5cd3c1a-fe55-46c9-b62e-ca9680de32ce}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\window\window.cpp">
-      <Filter>Source Files\window</Filter>
+    <ClCompile Include="src\computeShaderApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\descriptors.cpp">
+      <Filter>Source Files\core</Filter>
     </ClCompile>
     <ClCompile Include="src\core\device.cpp">
       <Filter>Source Files\core</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\swapchain.cpp">
+    <ClCompile Include="src\rendering\pipeline.cpp">
       <Filter>Source Files\rendering</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\renderer.cpp">
       <Filter>Source Files\rendering</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\pipeline.cpp">
+    <ClCompile Include="src\rendering\swapchain.cpp">
       <Filter>Source Files\rendering</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\descriptors.cpp">
-      <Filter>Source Files\core</Filter>
+    <ClCompile Include="src\window\eventSystem.cpp">
+      <Filter>Source Files\window</Filter>
     </ClCompile>
-    <ClCompile Include="src\computeShaderApp.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\window\window.cpp">
+      <Filter>Source Files\window</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="res\shaders\main.comp">
+      <Filter>Resource Files</Filter>
+    </None>
     <None Include="res\shaders\main.frag">
       <Filter>Resource Files</Filter>
     </None>
     <None Include="res\shaders\main.vert">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="res\shaders\main.comp">
-      <Filter>Resource Files</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\window\window.hpp">
-      <Filter>Header Files\window</Filter>
+    <ClInclude Include="include\computeShaderApp.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\application.hpp">
+      <Filter>Header Files\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\descriptors.hpp">
+      <Filter>Header Files\core</Filter>
     </ClInclude>
     <ClInclude Include="include\core\device.hpp">
       <Filter>Header Files\core</Filter>
     </ClInclude>
-    <ClInclude Include="include\rendering\swapchain.hpp">
+    <ClInclude Include="include\rendering\pipeline.hpp">
       <Filter>Header Files\rendering</Filter>
     </ClInclude>
     <ClInclude Include="include\rendering\renderer.hpp">
       <Filter>Header Files\rendering</Filter>
     </ClInclude>
+    <ClInclude Include="include\rendering\swapchain.hpp">
+      <Filter>Header Files\rendering</Filter>
+    </ClInclude>
     <ClInclude Include="include\utils\resources.hpp">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
-    <ClInclude Include="include\rendering\pipeline.hpp">
-      <Filter>Header Files\rendering</Filter>
+    <ClInclude Include="include\window\eventSystem.hpp">
+      <Filter>Header Files\window</Filter>
     </ClInclude>
-    <ClInclude Include="include\core\descriptors.hpp">
-      <Filter>Header Files\core</Filter>
-    </ClInclude>
-    <ClInclude Include="include\core\application.hpp">
-      <Filter>Header Files\core</Filter>
-    </ClInclude>
-    <ClInclude Include="include\computeShaderApp.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\window\window.hpp">
+      <Filter>Header Files\window</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

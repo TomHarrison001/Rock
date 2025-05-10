@@ -150,6 +150,7 @@
     <ClCompile Include="src\rendering\pipeline.cpp" />
     <ClCompile Include="src\rendering\renderer.cpp" />
     <ClCompile Include="src\rendering\swapchain.cpp" />
+    <ClCompile Include="src\window\eventSystem.cpp" />
     <ClCompile Include="src\window\window.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -166,6 +167,7 @@
     <ClInclude Include="include\rendering\renderer.hpp" />
     <ClInclude Include="include\rendering\swapchain.hpp" />
     <ClInclude Include="include\utils\resources.hpp" />
+    <ClInclude Include="include\window\eventSystem.hpp" />
     <ClInclude Include="include\window\window.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

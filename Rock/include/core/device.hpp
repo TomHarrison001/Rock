@@ -1,6 +1,7 @@
 #pragma once
 
 #include "window/window.hpp"
+#include "window/eventSystem.hpp"
 
 #include <iostream>
 #include <vector>
@@ -65,6 +66,11 @@ public:
 
     SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(m_physicalDevice); } //!< returns the swap chain support
     QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(m_physicalDevice); } //!< returns the queue families
+
+    bool isKeyPressed(int keycode) { return EventSystem::isKeyPressed(m_window->getWindow(), keycode); } //!< checks if the input keycode is currently being pressed
+    bool isMouseButtonPressed(int mouseBtn) { return EventSystem::isMouseButtonPressed(m_window->getWindow(), mouseBtn); } //!< checks if the input mouse button is currently being pressed
+    glm::vec2 getMousePosition() { return EventSystem::getMousePosition(m_window->getWindow()); } //!< returns the current mouse position
+    void closeWindow() { glfwSetWindowShouldClose(m_window->getWindow(), true); } //!< closes the GLFW window
 private:
     void initDevice(); //!< initialises the device
     void createInstance(); //!< creates the instance

@@ -25,6 +25,12 @@ void ComputeShaderApp::mainLoop()
         double currentTime = glfwGetTime();
         m_lastFrameTime = (currentTime - m_lastTime) * 1000.f;
         m_lastTime = currentTime;
+        
+        if (m_device->isKeyPressed(GLFW_KEY_ESCAPE))
+        {
+            std::cout << "[EventSystem] Exiting..." << std::endl;
+            m_device->closeWindow();
+        }
     }
 
     vkDeviceWaitIdle(m_device->getDevice());
@@ -43,6 +49,7 @@ void ComputeShaderApp::cleanup()
         vkFreeMemory(m_device->getDevice(), m_shaderStorageBuffersMemory[i], nullptr);
     }
     delete m_descriptorManager;
+    m_descriptorManager = nullptr;
     delete m_renderer;
     m_renderer = nullptr;
     delete m_graphicsPipeline;
