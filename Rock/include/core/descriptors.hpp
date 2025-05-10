@@ -1,3 +1,5 @@
+/** \file descriptors.hpp */
+
 #pragma once
 
 #include "core/device.hpp"

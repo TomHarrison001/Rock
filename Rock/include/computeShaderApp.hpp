@@ -1,3 +1,5 @@
+/** \file computeShaderApp.hpp */
+
 #pragma once
 
 #include <random>

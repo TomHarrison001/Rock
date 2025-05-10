@@ -1,3 +1,5 @@
+/** \file device.hpp */
+
 #pragma once
 
 #include "window/window.hpp"

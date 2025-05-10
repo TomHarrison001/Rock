@@ -1,4 +1,4 @@
-/** \file descriptor.cpp */
+/** \file descriptors.cpp */
 
 #include "core/descriptors.hpp"
 

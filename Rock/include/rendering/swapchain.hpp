@@ -1,3 +1,5 @@
+/** \file swapchain.hpp */
+
 #pragma once
 
 #include "core/device.hpp"

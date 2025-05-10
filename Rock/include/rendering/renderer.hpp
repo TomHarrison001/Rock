@@ -1,3 +1,5 @@
+/** \file renderer.hpp */
+
 #pragma once
 
 #include "rendering/swapchain.hpp"

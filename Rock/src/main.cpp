@@ -1,3 +1,5 @@
+/** \file main.cpp */
+
 #include "computeShaderApp.hpp"
 
 int main() {

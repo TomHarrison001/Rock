@@ -1,3 +1,5 @@
+/** \file application.hpp */
+
 #pragma once
 
 #include "core/descriptors.hpp"

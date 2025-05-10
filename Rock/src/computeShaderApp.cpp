@@ -1,3 +1,5 @@
+/** \file computeShaderApp.cpp */
+
 #include "computeShaderApp.hpp"
 
 void ComputeShaderApp::initApplication()

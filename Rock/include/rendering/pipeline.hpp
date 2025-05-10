@@ -1,3 +1,5 @@
+/** \file pipeline.hpp */
+
 #pragma once
 
 #include "core/device.hpp"

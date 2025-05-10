@@ -1,3 +1,5 @@
+/** \file resources.hpp */
+
 #pragma once
 
 enum Resource { COLOUR, DEPTH }; //!< enums for resources
