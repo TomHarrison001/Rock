@@ -92,10 +92,13 @@ private:
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device); //!< gets swap chain support details for input device
 public:
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties); //!< finds memory index match input properties and filters
+    VkSampleCountFlagBits getMaxUsableSampleCount(); //!< returns the maximum samples the physical device can provide
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory); //!< creates buffer, allocates memory and binds with device
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size); //!< copies buffer; used for creating staged buffers before copying to buffer array (e.g. ssbos)
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features); //!< finds supported format favouring VK_IMAGE_TILING_LINEAR
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory); //!< creates an image and binds ith with the device to device memory
+    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels); //!< creates an image view
+    bool hasStencilComponent(VkFormat format); //!< returns if the format has a stencil component
 private:
     Window* m_window; //!< window object pointer
     VkInstance m_instance; //!< vulkan instance

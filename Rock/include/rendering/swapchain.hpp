@@ -33,7 +33,7 @@ public:
     VkSemaphore& getComputeFinishedSemaphore(uint32_t currentFrame) { return m_computeFinishedSemaphores[currentFrame]; } //!< compute finished semaphore getter method for current frame
     VkFence& getGraphicsInFlightFence(uint32_t currentFrame) { return m_graphicsInFlightFences[currentFrame]; } //!< graphics in flight fence getter method for current frame
     VkFence& getComputeInFlightFence(uint32_t currentFrame) { return m_computeInFlightFences[currentFrame]; } //!< compute in flight fence getter method for current frame
-    bool getResources() { return m_resources; } //!< returns if the swapchain should create images, image views and image memory for colour and depth
+    bool getResources() const { return m_resources; } //!< returns if the swapchain should create images, image views and image memory for colour and depth
     bool operator!=(const Swapchain* swapchain) const {
         return swapchain->getSwapchainImageFormat() != m_swapchainImageFormat ||
             swapchain->getSwapchainDepthFormat() != m_swapchainDepthFormat;
@@ -47,7 +47,6 @@ private:
     void createSyncObjects(); //!< initialises sync objects (semaphores and fences)
 
     VkFormat findDepthFormat(); //!< finds device supported depth format
-    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels); //!< creates an image view
     VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats); //!< chooses best available surface format
     VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes); //!< chooses best available present mode
     VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities); //!< determines swapchain extent based on capabilities and window extent

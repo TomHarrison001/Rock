@@ -128,7 +128,7 @@ void Swapchain::createImageViews()
 
     for (size_t i = 0; i < m_swapchainImages.size(); i++)
     {
-        m_swapchainImageViews[i] = createImageView(m_swapchainImages[i], m_swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        m_swapchainImageViews[i] = m_device->createImageView(m_swapchainImages[i], m_swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
     }
 }
 
@@ -137,12 +137,12 @@ void Swapchain::createResources(VkSampleCountFlagBits msaaSamples)
     VkFormat format = m_swapchainImageFormat;
     m_device->createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, msaaSamples, format, VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_colourImage, m_colourImageMemory);
-    m_colourImageView = createImageView(m_colourImage, format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+    m_colourImageView = m_device->createImageView(m_colourImage, format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 
     format = m_swapchainDepthFormat;
     m_device->createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, msaaSamples, format, VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthImage, m_depthImageMemory);
-    m_depthImageView = createImageView(m_depthImage, format, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+    m_depthImageView = m_device->createImageView(m_depthImage, format, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 }
 
 void Swapchain::createRenderPass(VkSampleCountFlagBits msaaSamples)
@@ -286,26 +286,6 @@ void Swapchain::createSyncObjects()
             vkCreateFence(m_device->getDevice(), &fenceInfo, nullptr, &m_computeInFlightFences[i]) != VK_SUCCESS)
             throw std::runtime_error("Failed to create compute synchronisation objects for a frame.");
     }
-}
-
-VkImageView Swapchain::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
-{
-    VkImageViewCreateInfo ci{};
-    ci.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    ci.image = image;
-    ci.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    ci.format = format;
-    ci.subresourceRange.aspectMask = aspectFlags;
-    ci.subresourceRange.baseMipLevel = 0;
-    ci.subresourceRange.levelCount = mipLevels;
-    ci.subresourceRange.baseArrayLayer = 0;
-    ci.subresourceRange.layerCount = 1;
-
-    VkImageView imageView;
-    if (vkCreateImageView(m_device->getDevice(), &ci, nullptr, &imageView) != VK_SUCCESS)
-        throw std::runtime_error("Failed to create image view.");
-
-    return imageView;
 }
 
 VkSurfaceFormatKHR Swapchain::chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
