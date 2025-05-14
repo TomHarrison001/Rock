@@ -155,9 +155,6 @@ void Pipeline::bindCompute(VkCommandBuffer commandBuffer)
 
 void Pipeline::defaultPipelineSettings(PipelineSettings& settings)
 {
-    settings.bindingDescription = Vertex::getBindingDescription();
-    settings.attributeDescriptions = Vertex::getAttributeDescriptions();
-
     settings.inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     settings.inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     settings.inputAssembly.primitiveRestartEnable = VK_FALSE;

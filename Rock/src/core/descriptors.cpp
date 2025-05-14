@@ -32,22 +32,9 @@ void DescriptorManager::buildDescriptorPool()
 		throw std::runtime_error("Failed to create descriptor pool.");
 }
 
-void DescriptorManager::allocateDescriptorSets(Stage stage)
+void DescriptorManager::allocateDescriptorSets(bool compute)
 {
-	if (stage == Stage::GRAPHICS)
-	{
-		std::vector<VkDescriptorSetLayout> layouts(m_maxSets, m_graphicsDescriptorSetLayout);
-		VkDescriptorSetAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = m_descriptorPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(m_maxSets);
-		allocInfo.pSetLayouts = layouts.data();
-
-		m_graphicsDescriptorSets.resize(m_maxSets);
-		if (vkAllocateDescriptorSets(m_device->getDevice(), &allocInfo, m_graphicsDescriptorSets.data()) != VK_SUCCESS)
-			throw std::runtime_error("Failed to allocate descriptor sets.");
-	}
-	else if (stage == Stage::COMPUTE)
+	if (compute)
 	{
 		std::vector<VkDescriptorSetLayout> layouts(m_maxSets, m_computeDescriptorSetLayout);
 		VkDescriptorSetAllocateInfo allocInfo{};
@@ -61,7 +48,18 @@ void DescriptorManager::allocateDescriptorSets(Stage stage)
 			throw std::runtime_error("Failed to allocate descriptor sets.");
 	}
 	else
-		throw std::runtime_error("Unsupported stage used to allocate descriptor sets.");
+	{
+		std::vector<VkDescriptorSetLayout> layouts(m_maxSets, m_graphicsDescriptorSetLayout);
+		VkDescriptorSetAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = m_descriptorPool;
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(m_maxSets);
+		allocInfo.pSetLayouts = layouts.data();
+
+		m_graphicsDescriptorSets.resize(m_maxSets);
+		if (vkAllocateDescriptorSets(m_device->getDevice(), &allocInfo, m_graphicsDescriptorSets.data()) != VK_SUCCESS)
+			throw std::runtime_error("Failed to allocate descriptor sets.");
+	}
 }
 
 void DescriptorManager::freeDescriptors() const
@@ -77,9 +75,9 @@ void DescriptorManager::resetDescriptorPool()
 	vkResetDescriptorPool(m_device->getDevice(), m_descriptorPool, 0);
 }
 
-void DescriptorManager::addBinding(Stage stage, uint32_t index, VkDescriptorType type, VkShaderStageFlags flags, uint32_t count, VkSampler* samplers)
+void DescriptorManager::addBinding(bool compute, uint32_t index, VkDescriptorType type, VkShaderStageFlags flags, uint32_t count, VkSampler* samplers)
 {
-	if (bindingFound(stage, index))
+	if (bindingFound(compute, index))
 		throw std::runtime_error("Binding already in use.");
 	VkDescriptorSetLayoutBinding layoutBinding{};
 	layoutBinding.binding = index;
@@ -87,19 +85,19 @@ void DescriptorManager::addBinding(Stage stage, uint32_t index, VkDescriptorType
 	layoutBinding.descriptorType = type;
 	layoutBinding.stageFlags = flags;
 	layoutBinding.pImmutableSamplers = samplers;
-	if (stage == Stage::GRAPHICS)
-		m_graphicsBindings.push_back(layoutBinding);
-	if (stage == Stage::COMPUTE)
+	if (compute)
 		m_computeBindings.push_back(layoutBinding);
+	else
+		m_graphicsBindings.push_back(layoutBinding);
 }
 
-bool DescriptorManager::bindingFound(Stage stage, uint32_t index)
+bool DescriptorManager::bindingFound(bool compute, uint32_t index)
 {
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
-	if (stage == Stage::GRAPHICS)
-		bindings = m_graphicsBindings;
-	else
+	if (compute)
 		bindings = m_computeBindings;
+	else
+		bindings = m_graphicsBindings;
 
 	for (auto& binding : bindings)
 	{
@@ -109,19 +107,11 @@ bool DescriptorManager::bindingFound(Stage stage, uint32_t index)
 	return false;
 }
 
-void DescriptorManager::buildDescriptorSetLayout(Stage stage)
+void DescriptorManager::buildDescriptorSetLayout(bool compute)
 {
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	if (stage == Stage::GRAPHICS)
-	{
-		layoutInfo.bindingCount = static_cast<uint32_t>(m_graphicsBindings.size());
-		layoutInfo.pBindings = m_graphicsBindings.data();
-
-		if (vkCreateDescriptorSetLayout(m_device->getDevice(), &layoutInfo, nullptr, &m_graphicsDescriptorSetLayout) != VK_SUCCESS)
-			throw std::runtime_error("Failed to create graphics descriptor set layout.");
-	}
-	else if (stage == Stage::COMPUTE)
+	if (compute)
 	{
 		layoutInfo.bindingCount = static_cast<uint32_t>(m_computeBindings.size());
 		layoutInfo.pBindings = m_computeBindings.data();
@@ -130,14 +120,20 @@ void DescriptorManager::buildDescriptorSetLayout(Stage stage)
 			throw std::runtime_error("Failed to create graphics descriptor set layout.");
 	}
 	else
-		throw std::runtime_error("Unsupported stage used to build descriptor set layouts.");
+	{
+		layoutInfo.bindingCount = static_cast<uint32_t>(m_graphicsBindings.size());
+		layoutInfo.pBindings = m_graphicsBindings.data();
+
+		if (vkCreateDescriptorSetLayout(m_device->getDevice(), &layoutInfo, nullptr, &m_graphicsDescriptorSetLayout) != VK_SUCCESS)
+			throw std::runtime_error("Failed to create graphics descriptor set layout.");
+	}
 }
 
-void DescriptorManager::addWriteDescriptorSet(Stage stage, uint32_t binding, VkDescriptorBufferInfo* bufferInfo, VkDescriptorImageInfo* imageInfo)
+void DescriptorManager::addWriteDescriptorSet(bool compute, uint32_t binding, VkDescriptorBufferInfo* bufferInfo, VkDescriptorImageInfo* imageInfo)
 {
-	if (!bindingFound(stage, binding))
+	if (!bindingFound(compute, binding))
 		throw std::runtime_error("Layout doesn't contain specified binding.");
-	VkDescriptorSetLayoutBinding bindingDescription = getDescriptorSetLayoutBinding(stage, binding);
+	VkDescriptorSetLayoutBinding bindingDescription = getDescriptorSetLayoutBinding(compute, binding);
 	VkWriteDescriptorSet write{};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.dstBinding = binding;
@@ -148,24 +144,16 @@ void DescriptorManager::addWriteDescriptorSet(Stage stage, uint32_t binding, VkD
 		write.pBufferInfo = bufferInfo;
 	if (imageInfo != nullptr)
 		write.pImageInfo = imageInfo;
-	if (stage == Stage::GRAPHICS)
-		m_graphicsDescriptorWrites.push_back(write);
-	else	
+	if (compute)
 		m_computeDescriptorWrites.push_back(write);
+	else	
+		m_graphicsDescriptorWrites.push_back(write);
 }
 
-void DescriptorManager::overwrite(Stage stage, uint32_t index)
+void DescriptorManager::overwrite(bool compute, uint32_t index)
 {
 	std::vector<VkWriteDescriptorSet> writes;
-	if (stage == Stage::GRAPHICS)
-	{
-		for (auto& write : m_graphicsDescriptorWrites)
-		{
-			write.dstSet = m_graphicsDescriptorSets[index];
-			writes.push_back(write);
-		}
-	}
-	else if (stage == Stage::COMPUTE)
+	if (compute)
 	{
 		for (auto& write : m_computeDescriptorWrites)
 		{
@@ -174,7 +162,13 @@ void DescriptorManager::overwrite(Stage stage, uint32_t index)
 		}
 	}
 	else
-		throw std::runtime_error("Unsupported stage used to overwrite descriptor sets.");
+	{
+		for (auto& write : m_graphicsDescriptorWrites)
+		{
+			write.dstSet = m_graphicsDescriptorSets[index];
+			writes.push_back(write);
+		}
+	}
 
 	vkUpdateDescriptorSets(m_device->getDevice(), static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }

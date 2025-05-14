@@ -77,7 +77,7 @@ void ModelApp::drawFrame()
     updateUniformBuffer(m_renderer->getCurrentFrame());
     vkResetFences(m_device->getDevice(), 1, &m_renderer->getGraphicsInFlightFence());
     vkResetCommandBuffer(m_renderer->getGraphicsCommandBuffer(), 0);
-    m_renderer->recordCommandBuffer(m_graphicsPipeline, m_vertexBuffer, m_indexBuffer, m_descriptorManager->getDescriptorSets(Stage::GRAPHICS), m_indices);
+    m_renderer->recordCommandBuffer(m_graphicsPipeline, m_vertexBuffer, m_indexBuffer, m_descriptorManager->getDescriptorSets(false), m_indices);
     m_renderer->submitCommandBuffer();
 
     m_renderer->endFrame();
@@ -85,9 +85,9 @@ void ModelApp::drawFrame()
 
 void ModelApp::createGraphicsDescriptorSetLayout()
 {
-    m_descriptorManager->addBinding(Stage::GRAPHICS, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
-    m_descriptorManager->addBinding(Stage::GRAPHICS, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    m_descriptorManager->buildDescriptorSetLayout(Stage::GRAPHICS);
+    m_descriptorManager->addBinding(false, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+    m_descriptorManager->addBinding(false, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    m_descriptorManager->buildDescriptorSetLayout(false);
 }
 
 void ModelApp::createGraphicsPipeline()
@@ -105,6 +105,8 @@ void ModelApp::createGraphicsPipeline()
 
     PipelineSettings pipelineSettings{};
     Pipeline::defaultPipelineSettings(pipelineSettings);
+    pipelineSettings.bindingDescription = Vertex::getBindingDescription();
+    pipelineSettings.attributeDescriptions = Vertex::getAttributeDescriptions();
     pipelineSettings.rasteriser.cullMode = VK_CULL_MODE_BACK_BIT;
     pipelineSettings.rasteriser.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // counter clockwise due to the Y-flip in the projection matrix
     pipelineSettings.multisampling.rasterizationSamples = m_msaaSamples;
@@ -297,7 +299,7 @@ void ModelApp::createDescriptorPool()
 
 void ModelApp::createGraphicsDescriptorSets()
 {
-    m_descriptorManager->allocateDescriptorSets(Stage::GRAPHICS);
+    m_descriptorManager->allocateDescriptorSets(false);
 
     for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -306,16 +308,16 @@ void ModelApp::createGraphicsDescriptorSets()
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(UniformBufferObject);
 
-        m_descriptorManager->addWriteDescriptorSet(Stage::GRAPHICS, 0, &bufferInfo, nullptr);
+        m_descriptorManager->addWriteDescriptorSet(false, 0, &bufferInfo, nullptr);
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         imageInfo.imageView = m_textureImageView;
         imageInfo.sampler = m_textureSampler;
 
-        m_descriptorManager->addWriteDescriptorSet(Stage::GRAPHICS, 1, nullptr, &imageInfo);
+        m_descriptorManager->addWriteDescriptorSet(false, 1, nullptr, &imageInfo);
 
-        m_descriptorManager->overwrite(Stage::GRAPHICS, i);
+        m_descriptorManager->overwrite(false, i);
     }
 }
 

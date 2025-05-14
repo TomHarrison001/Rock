@@ -68,25 +68,25 @@ void ComputeApp::drawFrame()
     updateUniformBuffer(m_renderer->getCurrentFrame());
     vkResetFences(m_device->getDevice(), 1, &m_renderer->getComputeInFlightFence());
     vkResetCommandBuffer(m_renderer->getComputeCommandBuffer(), 0);
-    m_renderer->recordCommandBuffer(Stage::COMPUTE, m_computePipeline, m_particleCount, {}, m_descriptorManager->getDescriptorSets(Stage::COMPUTE));
-    m_renderer->submitCommandBuffer(Stage::COMPUTE);
+    m_renderer->recordCommandBuffer(true, m_computePipeline, m_particleCount, {}, m_descriptorManager->getDescriptorSets(true));
+    m_renderer->submitCommandBuffer(true);
 
     vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getGraphicsInFlightFence(), VK_TRUE, UINT64_MAX);
     m_renderer->beginFrame();
     vkResetFences(m_device->getDevice(), 1, &m_renderer->getGraphicsInFlightFence());
     vkResetCommandBuffer(m_renderer->getGraphicsCommandBuffer(), 0);
-    m_renderer->recordCommandBuffer(Stage::GRAPHICS, m_graphicsPipeline, m_particleCount, m_shaderStorageBuffers, {});
-    m_renderer->submitCommandBuffer(Stage::GRAPHICS);
+    m_renderer->recordCommandBuffer(false, m_graphicsPipeline, m_particleCount, m_shaderStorageBuffers, {});
+    m_renderer->submitCommandBuffer(false);
 
     m_renderer->endFrame();
 }
 
 void ComputeApp::createComputeDescriptorSetLayout()
 {
-    m_descriptorManager->addBinding(Stage::COMPUTE, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
-    m_descriptorManager->addBinding(Stage::COMPUTE, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
-    m_descriptorManager->addBinding(Stage::COMPUTE, 2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
-    m_descriptorManager->buildDescriptorSetLayout(Stage::COMPUTE);
+    m_descriptorManager->addBinding(true, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+    m_descriptorManager->addBinding(true, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+    m_descriptorManager->addBinding(true, 2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+    m_descriptorManager->buildDescriptorSetLayout(true);
 }
 
 void ComputeApp::createGraphicsPipeline()
@@ -207,7 +207,7 @@ void ComputeApp::createDescriptorPool()
 
 void ComputeApp::createComputeDescriptorSets()
 {
-    m_descriptorManager->allocateDescriptorSets(Stage::COMPUTE);
+    m_descriptorManager->allocateDescriptorSets(true);
 
     for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -216,23 +216,23 @@ void ComputeApp::createComputeDescriptorSets()
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(UniformBufferObject);
 
-        m_descriptorManager->addWriteDescriptorSet(Stage::COMPUTE, 0, &bufferInfo, nullptr);
+        m_descriptorManager->addWriteDescriptorSet(true, 0, &bufferInfo, nullptr);
 
         VkDescriptorBufferInfo lastFrameInfo{};
         lastFrameInfo.buffer = m_shaderStorageBuffers[(i - 1) % Swapchain::MAX_FRAMES_IN_FLIGHT];
         lastFrameInfo.offset = 0;
         lastFrameInfo.range = sizeof(Particle) * m_particleCount;
 
-        m_descriptorManager->addWriteDescriptorSet(Stage::COMPUTE, 1, &lastFrameInfo, nullptr);
+        m_descriptorManager->addWriteDescriptorSet(true, 1, &lastFrameInfo, nullptr);
 
         VkDescriptorBufferInfo currentFrameInfo{};
         currentFrameInfo.buffer = m_shaderStorageBuffers[i];
         currentFrameInfo.offset = 0;
         currentFrameInfo.range = sizeof(Particle) * m_particleCount;
 
-        m_descriptorManager->addWriteDescriptorSet(Stage::COMPUTE, 2, &currentFrameInfo, nullptr);
+        m_descriptorManager->addWriteDescriptorSet(true, 2, &currentFrameInfo, nullptr);
 
-        m_descriptorManager->overwrite(Stage::COMPUTE, i);
+        m_descriptorManager->overwrite(true, i);
     }
 }
 

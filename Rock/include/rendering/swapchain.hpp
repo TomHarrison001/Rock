@@ -3,7 +3,6 @@
 #pragma once
 
 #include "core/device.hpp"
-#include "utils/resources.hpp"
 
 #include <vulkan/vulkan.h>
 #include <memory>

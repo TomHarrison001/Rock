@@ -7,8 +7,8 @@ Renderer::Renderer(Device* device, VkSampleCountFlagBits msaaSamples, bool resou
 {
     m_window = m_device->getWindow();
 	recreateSwapchain();
-	createCommandBuffers(Stage::GRAPHICS);
-	createCommandBuffers(Stage::COMPUTE);
+	createCommandBuffers(false);
+	createCommandBuffers(true);
 }
 
 Renderer::~Renderer()
@@ -20,7 +20,7 @@ Renderer::~Renderer()
 	m_window = nullptr;
 }
 
-void Renderer::createCommandBuffers(Stage stage)
+void Renderer::createCommandBuffers(bool compute)
 {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -28,20 +28,18 @@ void Renderer::createCommandBuffers(Stage stage)
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT);
 
-    if (stage == Stage::GRAPHICS)
-    {
-        m_graphicsCommandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
-        if (vkAllocateCommandBuffers(m_device->getDevice(), &allocInfo, m_graphicsCommandBuffers.data()) != VK_SUCCESS)
-            throw std::runtime_error("Failed to allocate graphics command buffers.");
-    }
-    else if (stage == Stage::COMPUTE)
+    if (compute)
     {
         m_computeCommandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
         if (vkAllocateCommandBuffers(m_device->getDevice(), &allocInfo, m_computeCommandBuffers.data()) != VK_SUCCESS)
             throw std::runtime_error("Failed to allocate compute command buffers.");
     }
     else
-        throw std::runtime_error("Unsupported pipeline stage used to create command buffers.");
+    {
+        m_graphicsCommandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+        if (vkAllocateCommandBuffers(m_device->getDevice(), &allocInfo, m_graphicsCommandBuffers.data()) != VK_SUCCESS)
+            throw std::runtime_error("Failed to allocate graphics command buffers.");
+    }
 }
 
 void Renderer::freeCommandBuffers()
@@ -152,12 +150,10 @@ void Renderer::endSwapchainRenderPass(VkCommandBuffer commandBuffer)
     vkCmdEndRenderPass(commandBuffer);
 }
 
-void Renderer::recordCommandBuffer(Stage stage, Pipeline* pipeline, const uint32_t m_particleCount, std::vector<VkBuffer> shaderStorageBuffers, std::vector<VkDescriptorSet> descriptorSets)
+void Renderer::recordCommandBuffer(bool compute, Pipeline* pipeline, const uint32_t m_particleCount, std::vector<VkBuffer> shaderStorageBuffers, std::vector<VkDescriptorSet> descriptorSets)
 {
     VkCommandBuffer commandBuffer;
-    if (stage == Stage::GRAPHICS) commandBuffer = m_graphicsCommandBuffers[m_currentFrame];
-    else if (stage == Stage::COMPUTE) commandBuffer = m_computeCommandBuffers[m_currentFrame];
-    else throw std::runtime_error("Unsupported stage used to record command buffer.");
+    commandBuffer = compute ? m_computeCommandBuffers[m_currentFrame] : m_graphicsCommandBuffers[m_currentFrame];
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -167,7 +163,13 @@ void Renderer::recordCommandBuffer(Stage stage, Pipeline* pipeline, const uint32
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
         throw std::runtime_error("Failed to begin recording command buffer.");
 
-    if (stage == Stage::GRAPHICS)
+    if (compute)
+    {
+        pipeline->bindCompute(commandBuffer);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getPipelineLayout(), 0, 1, &descriptorSets[m_currentFrame], 0, nullptr);
+        vkCmdDispatch(commandBuffer, m_particleCount / 256, 1, 1);
+    }
+    else
     {
         pipeline->bindGraphics(commandBuffer);
         beginSwapchainRenderPass(commandBuffer);
@@ -176,12 +178,6 @@ void Renderer::recordCommandBuffer(Stage stage, Pipeline* pipeline, const uint32
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &shaderStorageBuffers[m_currentFrame], offsets);
         vkCmdDraw(commandBuffer, m_particleCount, 1, 0, 0);
         vkCmdEndRenderPass(commandBuffer);
-    }
-    if (stage == Stage::COMPUTE)
-    {
-        pipeline->bindCompute(commandBuffer);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getPipelineLayout(), 0, 1, &descriptorSets[m_currentFrame], 0, nullptr);
-        vkCmdDispatch(commandBuffer, m_particleCount / 256, 1, 1);
     }
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -215,17 +211,15 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, Vk
         throw std::runtime_error("Failed to record render command buffer.");
 }
 
-void Renderer::submitCommandBuffer(Stage stage)
+void Renderer::submitCommandBuffer(bool compute)
 {
     VkCommandBuffer commandBuffer;
-    if (stage == Stage::GRAPHICS) commandBuffer = m_graphicsCommandBuffers[m_currentFrame];
-    else if (stage == Stage::COMPUTE) commandBuffer = m_computeCommandBuffers[m_currentFrame];
-    else throw std::runtime_error("Unsupported stage used to record command buffer.");
+    commandBuffer = (compute) ? m_computeCommandBuffers[m_currentFrame] : m_graphicsCommandBuffers[m_currentFrame];
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    if (stage == Stage::GRAPHICS)
+    if (!compute)
     {
         VkSemaphore waitSemaphores[] = { m_swapchain->getComputeFinishedSemaphore(m_currentFrame), m_swapchain->getImageAvailableSemaphore(m_currentFrame) };
         VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -235,9 +229,9 @@ void Renderer::submitCommandBuffer(Stage stage)
         submitInfo.pWaitDstStageMask = waitStages;
     }
 
-    VkSemaphore semaphore = (stage == Stage::GRAPHICS) ? m_swapchain->getGraphicsFinishedSemaphore(m_currentFrame) : m_swapchain->getComputeFinishedSemaphore(m_currentFrame);
-    VkQueue queue = (stage == Stage::GRAPHICS) ? m_device->getGraphicsQueue() : m_device->getComputeQueue();
-    VkFence fence = (stage == Stage::GRAPHICS) ? m_swapchain->getGraphicsInFlightFence(m_currentFrame) : m_swapchain->getComputeInFlightFence(m_currentFrame);
+    VkSemaphore semaphore = (compute) ? m_swapchain->getComputeFinishedSemaphore(m_currentFrame) : m_swapchain->getGraphicsFinishedSemaphore(m_currentFrame);
+    VkQueue queue = (compute) ? m_device->getComputeQueue() : m_device->getGraphicsQueue();
+    VkFence fence = (compute) ? m_swapchain->getComputeInFlightFence(m_currentFrame) : m_swapchain->getGraphicsInFlightFence(m_currentFrame);
 
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
