@@ -10,7 +10,7 @@ void ComputeShaderApp::initApplication()
     m_lastTime = glfwGetTime();
 
     createComputeDescriptorSetLayout();
-    createRenderPipeline();
+    createGraphicsPipeline();
     createComputePipeline();
     createShaderStorageBuffers();
     createUniformBuffers();
@@ -88,20 +88,6 @@ void ComputeShaderApp::drawFrame()
     m_renderer->endFrame();
 }
 
-void ComputeShaderApp::createDescriptorPool()
-{
-    m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
-    m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT) * 2);
-    m_descriptorManager->buildDescriptorPool();
-}
-
-void ComputeShaderApp::createGraphicsDescriptorSetLayout()
-{
-    m_descriptorManager->addBinding(Stage::GRAPHICS, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
-    m_descriptorManager->addBinding(Stage::GRAPHICS, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    m_descriptorManager->buildDescriptorSetLayout(Stage::GRAPHICS);
-}
-
 void ComputeShaderApp::createComputeDescriptorSetLayout()
 {
     m_descriptorManager->addBinding(Stage::COMPUTE, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
@@ -110,62 +96,7 @@ void ComputeShaderApp::createComputeDescriptorSetLayout()
     m_descriptorManager->buildDescriptorSetLayout(Stage::COMPUTE);
 }
 
-void ComputeShaderApp::createGraphicsDescriptorSets()
-{
-    m_descriptorManager->allocateDescriptorSets(Stage::GRAPHICS);
-
-    for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
-    {
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = m_uniformBuffers[i];
-        bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UniformBufferObject);
-
-        m_descriptorManager->addWriteDescriptorSet(Stage::GRAPHICS, 0, &bufferInfo, nullptr);
-
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = m_textureImageView;
-        imageInfo.sampler = m_textureSampler;
-
-        m_descriptorManager->addWriteDescriptorSet(Stage::GRAPHICS, 1, nullptr, &imageInfo);
-
-        m_descriptorManager->overwrite(Stage::GRAPHICS, i);
-    }
-}
-
-void ComputeShaderApp::createComputeDescriptorSets()
-{
-    m_descriptorManager->allocateDescriptorSets(Stage::COMPUTE);
-
-    for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
-    {
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = m_uniformBuffers[i];
-        bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UniformBufferObject);
-
-        m_descriptorManager->addWriteDescriptorSet(Stage::COMPUTE, 0, &bufferInfo, nullptr);
-
-        VkDescriptorBufferInfo lastFrameInfo{};
-        lastFrameInfo.buffer = m_shaderStorageBuffers[(i - 1) % Swapchain::MAX_FRAMES_IN_FLIGHT];
-        lastFrameInfo.offset = 0;
-        lastFrameInfo.range = sizeof(Particle) * m_particleCount;
-
-        m_descriptorManager->addWriteDescriptorSet(Stage::COMPUTE, 1, &lastFrameInfo, nullptr);
-
-        VkDescriptorBufferInfo currentFrameInfo{};
-        currentFrameInfo.buffer = m_shaderStorageBuffers[i];
-        currentFrameInfo.offset = 0;
-        currentFrameInfo.range = sizeof(Particle) * m_particleCount;
-
-        m_descriptorManager->addWriteDescriptorSet(Stage::COMPUTE, 2, &currentFrameInfo, nullptr);
-
-        m_descriptorManager->overwrite(Stage::COMPUTE, i);
-    }
-}
-
-void ComputeShaderApp::createRenderPipeline()
+void ComputeShaderApp::createGraphicsPipeline()
 {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -180,19 +111,17 @@ void ComputeShaderApp::createRenderPipeline()
 
     PipelineSettings pipelineSettings{};
     Pipeline::defaultPipelineSettings(pipelineSettings);
+    pipelineSettings.bindingDescription = Particle::getBindingDescription();
+    pipelineSettings.attributeDescriptions = Particle::getAttributeDescriptions();
     pipelineSettings.inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
     pipelineSettings.rasteriser.cullMode = VK_CULL_MODE_BACK_BIT;
     pipelineSettings.rasteriser.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // counter clockwise due to the Y-flip in the projection matrix
-    pipelineSettings.colourBlendAttachment.blendEnable = VK_TRUE;
-    pipelineSettings.colourBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    pipelineSettings.colourBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    pipelineSettings.colourBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    pipelineSettings.colourBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    Pipeline::enableAlphaBlending(pipelineSettings);
     pipelineSettings.pipelineLayout = pipelineLayout;
     pipelineSettings.renderPass = m_renderer->getSwapchainRenderPass();
     pipelineSettings.subpass = 0;
 
-    m_graphicsPipeline = new Pipeline(m_device, pipelineSettings, "./res/shaders/vert.spv", "./res/shaders/frag.spv");
+    m_graphicsPipeline = new Pipeline(m_device, pipelineSettings, "./res/shaders/computeApp/vert.spv", "./res/shaders/computeApp/frag.spv");
 }
 
 void ComputeShaderApp::createComputePipeline()
@@ -211,7 +140,7 @@ void ComputeShaderApp::createComputePipeline()
     PipelineSettings pipelineSettings{};
     pipelineSettings.pipelineLayout = pipelineLayout;
 
-    m_computePipeline = new Pipeline(m_device, pipelineSettings, "./res/shaders/comp.spv");
+    m_computePipeline = new Pipeline(m_device, pipelineSettings, "./res/shaders/computeApp/comp.spv");
 }
 
 void ComputeShaderApp::createShaderStorageBuffers()
@@ -273,6 +202,44 @@ void ComputeShaderApp::createUniformBuffers()
     {
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_uniformBuffers[i], m_uniformBuffersMemory[i]);
         vkMapMemory(m_device->getDevice(), m_uniformBuffersMemory[i], 0, bufferSize, 0, &m_uniformBuffersMapped[i]);
+    }
+}
+
+void ComputeShaderApp::createDescriptorPool()
+{
+    m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
+    m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT) * 2);
+    m_descriptorManager->buildDescriptorPool();
+}
+
+void ComputeShaderApp::createComputeDescriptorSets()
+{
+    m_descriptorManager->allocateDescriptorSets(Stage::COMPUTE);
+
+    for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = m_uniformBuffers[i];
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(UniformBufferObject);
+
+        m_descriptorManager->addWriteDescriptorSet(Stage::COMPUTE, 0, &bufferInfo, nullptr);
+
+        VkDescriptorBufferInfo lastFrameInfo{};
+        lastFrameInfo.buffer = m_shaderStorageBuffers[(i - 1) % Swapchain::MAX_FRAMES_IN_FLIGHT];
+        lastFrameInfo.offset = 0;
+        lastFrameInfo.range = sizeof(Particle) * m_particleCount;
+
+        m_descriptorManager->addWriteDescriptorSet(Stage::COMPUTE, 1, &lastFrameInfo, nullptr);
+
+        VkDescriptorBufferInfo currentFrameInfo{};
+        currentFrameInfo.buffer = m_shaderStorageBuffers[i];
+        currentFrameInfo.offset = 0;
+        currentFrameInfo.range = sizeof(Particle) * m_particleCount;
+
+        m_descriptorManager->addWriteDescriptorSet(Stage::COMPUTE, 2, &currentFrameInfo, nullptr);
+
+        m_descriptorManager->overwrite(Stage::COMPUTE, i);
     }
 }
 
