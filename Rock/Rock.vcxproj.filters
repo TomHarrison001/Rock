@@ -34,6 +34,12 @@
     <Filter Include="Source Files\window">
       <UniqueIdentifier>{a5cd3c1a-fe55-46c9-b62e-ca9680de32ce}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\modelApp">
+      <UniqueIdentifier>{ad176066-e4a8-4735-9aff-7f6cf479a64f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\computeApp">
+      <UniqueIdentifier>{df05de16-9872-4242-8187-b091da7a2434}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -63,17 +69,6 @@
     <ClCompile Include="src\window\window.cpp">
       <Filter>Source Files\window</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="res\shaders\main.comp">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="res\shaders\main.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="res\shaders\main.vert">
-      <Filter>Resource Files</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\computeShaderApp.hpp">
@@ -106,5 +101,22 @@
     <ClInclude Include="include\window\window.hpp">
       <Filter>Header Files\window</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\shaders\modelApp\main.frag">
+      <Filter>Resource Files\modelApp</Filter>
+    </None>
+    <None Include="res\shaders\modelApp\main.vert">
+      <Filter>Resource Files\modelApp</Filter>
+    </None>
+    <None Include="res\shaders\computeApp\main.comp">
+      <Filter>Resource Files\computeApp</Filter>
+    </None>
+    <None Include="res\shaders\computeApp\main.frag">
+      <Filter>Resource Files\computeApp</Filter>
+    </None>
+    <None Include="res\shaders\computeApp\main.vert">
+      <Filter>Resource Files\computeApp</Filter>
+    </None>
   </ItemGroup>
 </Project>

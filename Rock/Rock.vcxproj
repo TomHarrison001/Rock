@@ -154,11 +154,6 @@
     <ClCompile Include="src\window\window.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\shaders\main.comp" />
-    <None Include="res\shaders\main.frag" />
-    <None Include="res\shaders\main.vert" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="include\computeShaderApp.hpp" />
     <ClInclude Include="include\core\application.hpp" />
     <ClInclude Include="include\core\descriptors.hpp" />
@@ -169,6 +164,13 @@
     <ClInclude Include="include\utils\resources.hpp" />
     <ClInclude Include="include\window\eventSystem.hpp" />
     <ClInclude Include="include\window\window.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\shaders\computeApp\main.comp" />
+    <None Include="res\shaders\computeApp\main.frag" />
+    <None Include="res\shaders\computeApp\main.vert" />
+    <None Include="res\shaders\modelApp\main.frag" />
+    <None Include="res\shaders\modelApp\main.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
