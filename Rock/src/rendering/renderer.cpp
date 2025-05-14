@@ -2,8 +2,8 @@
 
 #include "rendering/renderer.hpp"
 
-Renderer::Renderer(Device* device)
-	: m_device(device)
+Renderer::Renderer(Device* device, VkSampleCountFlagBits msaaSamples, bool resources)
+	: m_device(device), m_msaaSamples(msaaSamples), m_resources(resources)
 {
     m_window = m_device->getWindow();
 	recreateSwapchain();
@@ -66,14 +66,14 @@ void Renderer::recreateSwapchain()
     if (m_swapchain != nullptr)
     {
         Swapchain* oldSwapchain = std::move(m_swapchain);
-        m_swapchain = new Swapchain(m_device, oldSwapchain);
+        m_swapchain = new Swapchain(m_device, oldSwapchain, m_msaaSamples);
         if (*oldSwapchain != m_swapchain)
             throw std::runtime_error("Swap chain image/depth format has changed.");
         delete oldSwapchain;
         oldSwapchain = nullptr;
     }
     else
-        m_swapchain = new Swapchain(m_device);
+        m_swapchain = new Swapchain(m_device, m_msaaSamples, m_resources);
 }
 
 void Renderer::beginFrame()
@@ -116,17 +116,18 @@ void Renderer::endFrame()
     m_currentFrame = (m_currentFrame + 1) % Swapchain::MAX_FRAMES_IN_FLIGHT;
 }
 
-void Renderer::beginSwapchainRenderPass(VkCommandBuffer commandBuffer)
+void Renderer::beginSwapchainRenderPass(VkCommandBuffer commandBuffer, bool depth)
 {
-    VkClearValue clearColour = { {{ 0.f, 0.f, 0.f, 1.f }} };
+    std::vector<VkClearValue> clearColours = { {{ 0.f, 0.f, 0.f, 1.f }} };
+    if (depth) clearColours.push_back({ {{1.f, 0}} });
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = m_swapchain->getRenderPass();
     renderPassInfo.framebuffer = m_swapchain->getFramebuffer(m_imageIndex);
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = m_swapchain->getSwapchainExtent();
-    renderPassInfo.clearValueCount = 1;
-    renderPassInfo.pClearValues = &clearColour;
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearColours.size());
+    renderPassInfo.pClearValues = clearColours.data();
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -187,6 +188,33 @@ void Renderer::recordCommandBuffer(Stage stage, Pipeline* pipeline, const uint32
         throw std::runtime_error("Failed to record render command buffer.");
 }
 
+void Renderer::recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer, std::vector<VkDescriptorSet> descriptorSets, std::vector<uint32_t> indices)
+{
+    VkCommandBuffer commandBuffer = m_graphicsCommandBuffers[m_currentFrame];
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = 0; // optional
+    beginInfo.pInheritanceInfo = nullptr; // optional
+
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
+        throw std::runtime_error("Failed to begin recording command buffer.");
+
+    pipeline->bindGraphics(commandBuffer);
+    beginSwapchainRenderPass(commandBuffer, true);
+
+    VkBuffer vertexBuffers[] = { vertexBuffer };
+    VkDeviceSize offsets[] = { 0 };
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayout(), 0, 1, &descriptorSets[m_currentFrame], 0, nullptr);
+    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+    vkCmdEndRenderPass(commandBuffer);
+
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
+        throw std::runtime_error("Failed to record render command buffer.");
+}
+
 void Renderer::submitCommandBuffer(Stage stage)
 {
     VkCommandBuffer commandBuffer;
@@ -217,5 +245,28 @@ void Renderer::submitCommandBuffer(Stage stage)
     submitInfo.pSignalSemaphores = &semaphore;
 
     if (vkQueueSubmit(queue, 1, &submitInfo, fence) != VK_SUCCESS)
+        throw std::runtime_error("Failed to submit command buffer.");
+}
+
+void Renderer::submitCommandBuffer()
+{
+    VkCommandBuffer commandBuffer = m_graphicsCommandBuffers[m_currentFrame];
+
+    VkSemaphore waitSemaphores[] = { m_swapchain->getImageAvailableSemaphore(m_currentFrame) };
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    VkSemaphore signalSemaphores[] = { m_swapchain->getGraphicsFinishedSemaphore(m_currentFrame) };
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStages;
+
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(m_device->getGraphicsQueue(), 1, &submitInfo, m_swapchain->getGraphicsInFlightFence(m_currentFrame)) != VK_SUCCESS)
         throw std::runtime_error("Failed to submit command buffer.");
 }

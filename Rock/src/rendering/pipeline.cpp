@@ -69,6 +69,7 @@ void Pipeline::createGraphicsPipeline(const PipelineSettings& settings, const st
     pipelineInfo.pViewportState = &settings.viewportState;
     pipelineInfo.pRasterizationState = &settings.rasteriser;
     pipelineInfo.pMultisampleState = &settings.multisampling;
+    pipelineInfo.pDepthStencilState = &settings.depthStencil;
     pipelineInfo.pColorBlendState = &settings.colourBlending;
     pipelineInfo.pDynamicState = &settings.dynamicState;
     pipelineInfo.layout = settings.pipelineLayout;
@@ -154,8 +155,8 @@ void Pipeline::bindCompute(VkCommandBuffer commandBuffer)
 
 void Pipeline::defaultPipelineSettings(PipelineSettings& settings)
 {
-    settings.bindingDescription = Particle::getBindingDescription();
-    settings.attributeDescriptions = Particle::getAttributeDescriptions();
+    settings.bindingDescription = Vertex::getBindingDescription();
+    settings.attributeDescriptions = Vertex::getAttributeDescriptions();
 
     settings.inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     settings.inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -225,6 +226,6 @@ void Pipeline::enableAlphaBlending(PipelineSettings& settings)
     settings.colourBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
     settings.colourBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     settings.colourBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    settings.colourBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    settings.colourBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     settings.colourBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 }

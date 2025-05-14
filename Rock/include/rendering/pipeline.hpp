@@ -18,11 +18,12 @@ struct PipelineSettings
 	PipelineSettings& operator=(const PipelineSettings&) = delete; //!< copy assignment
 
 	VkVertexInputBindingDescription bindingDescription; //!< binding description used in VkPipelineVertexInputStateCreateInfo
-	std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions; // attribute descriptions used in VkPipelineVertexInputStateCreateInfo
+	std::vector<VkVertexInputAttributeDescription> attributeDescriptions; // attribute descriptions used in VkPipelineVertexInputStateCreateInfo
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly; //!< pipeline input assembly state
 	VkPipelineViewportStateCreateInfo viewportState; //!< viewports and scissors with pointers
 	VkPipelineRasterizationStateCreateInfo rasteriser; //!< rasterisation settings e.g. depth and culling
 	VkPipelineMultisampleStateCreateInfo multisampling; //!< multisampling state
+	VkPipelineDepthStencilStateCreateInfo depthStencil; //!< depth stencil
 	VkPipelineColorBlendAttachmentState colourBlendAttachment; //!< colour blend attachment
 	VkPipelineColorBlendStateCreateInfo colourBlending; //!< colour blending
 	std::vector<VkDynamicState> dynamicStates; //!< dynamic states

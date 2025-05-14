@@ -69,6 +69,9 @@
     <ClCompile Include="src\window\window.cpp">
       <Filter>Source Files\window</Filter>
     </ClCompile>
+    <ClCompile Include="src\modelApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\computeShaderApp.hpp">
@@ -100,6 +103,9 @@
     </ClInclude>
     <ClInclude Include="include\window\window.hpp">
       <Filter>Header Files\window</Filter>
+    </ClInclude>
+    <ClInclude Include="include\modelApp.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

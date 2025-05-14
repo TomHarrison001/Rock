@@ -16,8 +16,8 @@ class Swapchain
 {
 public:
 	static const int MAX_FRAMES_IN_FLIGHT = 2; //!< static var containing maxmimum number of potential frames in flight
-	Swapchain(Device* device); //!< constructor
-	Swapchain(Device* device, Swapchain* oldSwapchain); //!< constructor with additional input of previous swapchain
+	Swapchain(Device* device, VkSampleCountFlagBits msaaSamples, bool resources); //!< constructor
+	Swapchain(Device* device, Swapchain* oldSwapchain, VkSampleCountFlagBits msaaSamples); //!< constructor with additional input of previous swapchain
 	~Swapchain(); //!< destructor
     Swapchain(const Swapchain&) = delete; //!< copy constructor
     Swapchain& operator=(const Swapchain&) = delete; //!< copy assignment
@@ -33,6 +33,7 @@ public:
     VkSemaphore& getComputeFinishedSemaphore(uint32_t currentFrame) { return m_computeFinishedSemaphores[currentFrame]; } //!< compute finished semaphore getter method for current frame
     VkFence& getGraphicsInFlightFence(uint32_t currentFrame) { return m_graphicsInFlightFences[currentFrame]; } //!< graphics in flight fence getter method for current frame
     VkFence& getComputeInFlightFence(uint32_t currentFrame) { return m_computeInFlightFences[currentFrame]; } //!< compute in flight fence getter method for current frame
+    bool getResources() { return m_resources; } //!< returns if the swapchain should create images, image views and image memory for colour and depth
     bool operator!=(const Swapchain* swapchain) const {
         return swapchain->getSwapchainImageFormat() != m_swapchainImageFormat ||
             swapchain->getSwapchainDepthFormat() != m_swapchainDepthFormat;
@@ -40,8 +41,8 @@ public:
 private:
     void createSwapchain(VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE); //!< defines and initialises the swapchain
     void createImageViews(); //!< creates image views
-    void createResources(Resource type); //!< creates resources (colour or depth, see resourceType)
-    void createRenderPass(); //!< creates render pass
+    void createResources(VkSampleCountFlagBits msaaSamples); //!< creates resources for colour and depth
+    void createRenderPass(VkSampleCountFlagBits msaaSamples); //!< creates render pass
     void createFramebuffers(); //!< initialises framebuffer
     void createSyncObjects(); //!< initialises sync objects (semaphores and fences)
 
@@ -67,4 +68,13 @@ private:
     std::vector<VkSemaphore> m_computeFinishedSemaphores; //!< semaphores for compute shaders
     std::vector<VkFence> m_graphicsInFlightFences; //!< fence for graphics
     std::vector<VkFence> m_computeInFlightFences; //!< fence for compute
+
+    VkImage m_colourImage; //!< image for colour image resource
+    VkDeviceMemory m_colourImageMemory; //!< memory for colour image resource
+    VkImageView m_colourImageView; //!< image view for colour image resource
+    VkImage m_depthImage; //!< image for depth image resource
+    VkDeviceMemory m_depthImageMemory; //!< memory for depth image resource
+    VkImageView m_depthImageView; //!< image view for depth image resource
+
+    bool m_resources; //!< bool if the swapchain should create images, image views and image memory for colour and depth
 };

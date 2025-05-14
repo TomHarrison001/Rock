@@ -2,22 +2,25 @@
 
 #include "rendering/swapchain.hpp"
 
-Swapchain::Swapchain(Device* device) : m_device(device)
+Swapchain::Swapchain(Device* device, VkSampleCountFlagBits msaaSamples, bool resources) : m_device(device), m_resources(resources)
 {
     createSwapchain();
     createImageViews();
-    //createResources();
-    createRenderPass();
+    if (m_resources)
+        createResources(msaaSamples);
+    createRenderPass(msaaSamples);
     createFramebuffers();
     createSyncObjects();
 }
 
-Swapchain::Swapchain(Device* device, Swapchain* oldSwapchain) : m_device(device)
+Swapchain::Swapchain(Device* device, Swapchain* oldSwapchain, VkSampleCountFlagBits msaaSamples) : m_device(device)
 {
+    m_resources = oldSwapchain->getResources();
     createSwapchain(oldSwapchain->getSwapchain());
     createImageViews();
-    //createResources();
-    createRenderPass();
+    if (m_resources)
+        createResources(msaaSamples);
+    createRenderPass(msaaSamples);
     createFramebuffers();
     createSyncObjects();
 }
@@ -28,6 +31,15 @@ Swapchain::~Swapchain()
     {
         vkDestroySwapchainKHR(m_device->getDevice(), m_swapchain, nullptr);
         m_swapchain = nullptr;
+    }
+    if (m_resources)
+    {
+        vkDestroyImageView(m_device->getDevice(), m_depthImageView, nullptr);
+        vkDestroyImage(m_device->getDevice(), m_depthImage, nullptr);
+        vkFreeMemory(m_device->getDevice(), m_depthImageMemory, nullptr);
+        vkDestroyImageView(m_device->getDevice(), m_colourImageView, nullptr);
+        vkDestroyImage(m_device->getDevice(), m_colourImage, nullptr);
+        vkFreeMemory(m_device->getDevice(), m_colourImageMemory, nullptr);
     }
     for (int i = 0; i < m_swapchainImages.size(); i++)
     {
@@ -116,47 +128,28 @@ void Swapchain::createImageViews()
 
     for (size_t i = 0; i < m_swapchainImages.size(); i++)
     {
-        VkImageViewCreateInfo ci{};
-        ci.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        ci.image = m_swapchainImages[i];
-        ci.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        ci.format = m_swapchainImageFormat;
-        ci.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-        ci.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-        ci.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-        ci.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-        ci.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        ci.subresourceRange.baseMipLevel = 0;
-        ci.subresourceRange.levelCount = 1;
-        ci.subresourceRange.baseArrayLayer = 0;
-        ci.subresourceRange.layerCount = 1;
-
-        if (vkCreateImageView(m_device->getDevice(), &ci, nullptr, &m_swapchainImageViews[i]) != VK_SUCCESS)
-            throw std::runtime_error("Failed to create image views.");
+        m_swapchainImageViews[i] = createImageView(m_swapchainImages[i], m_swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
     }
 }
 
-void Swapchain::createResources(Resource type)
+void Swapchain::createResources(VkSampleCountFlagBits msaaSamples)
 {
-    VkFormat format = (type == Resource::COLOUR) ? m_swapchainImageFormat : m_swapchainDepthFormat;
-    VkImageUsageFlags usage = (type == Resource::COLOUR) ?
-        VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT :
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    VkImageAspectFlags flags = (type == Resource::COLOUR) ?
-        VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_DEPTH_BIT;
+    VkFormat format = m_swapchainImageFormat;
+    m_device->createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, msaaSamples, format, VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_colourImage, m_colourImageMemory);
+    m_colourImageView = createImageView(m_colourImage, format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 
-    for (int i = 0; i < m_swapchainImages.size(); i++)
-    {
-        m_device->createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_swapchainImages[i], m_swapchainImageMemory[i]);
-        m_swapchainImageViews[i] = createImageView(m_swapchainImages[i], format, flags, 1);
-    }
+    format = m_swapchainDepthFormat;
+    m_device->createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, msaaSamples, format, VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthImage, m_depthImageMemory);
+    m_depthImageView = createImageView(m_depthImage, format, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 }
 
-void Swapchain::createRenderPass()
+void Swapchain::createRenderPass(VkSampleCountFlagBits msaaSamples)
 {
     VkAttachmentDescription colourAttachment{};
     colourAttachment.format = m_swapchainImageFormat;
-    colourAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colourAttachment.samples = msaaSamples;
     colourAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colourAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     colourAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -181,10 +174,57 @@ void Swapchain::createRenderPass()
     dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
+    std::vector<VkAttachmentDescription> attachments = { colourAttachment };
+
+    if (m_resources)
+    {
+        attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkAttachmentDescription depthAttachment{};
+        depthAttachment.format = m_swapchainDepthFormat;
+        depthAttachment.samples = msaaSamples;
+        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+        attachments.push_back(depthAttachment);
+
+        VkAttachmentDescription colourAttachmentResolve{};
+        colourAttachmentResolve.format = m_swapchainImageFormat;
+        colourAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+        colourAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        colourAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        colourAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        colourAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        colourAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        colourAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+        attachments.push_back(colourAttachmentResolve);
+
+        VkAttachmentReference depthAttachmentRef{};
+        depthAttachmentRef.attachment = 1;
+        depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+        VkAttachmentReference colourAttachmentResolveRef{};
+        colourAttachmentResolveRef.attachment = 2;
+        colourAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        subpass.pDepthStencilAttachment = &depthAttachmentRef;
+        subpass.pResolveAttachments = &colourAttachmentResolveRef;
+
+        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        dependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    }
+
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = 1;
-    renderPassInfo.pAttachments = &colourAttachment;
+    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    renderPassInfo.pAttachments = attachments.data();
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
     renderPassInfo.dependencyCount = 1;
@@ -200,15 +240,18 @@ void Swapchain::createFramebuffers()
 
     for (size_t i = 0; i < m_swapchainImageViews.size(); i++)
     {
-        VkImageView attachments[] = {
-            m_swapchainImageViews[i]
-        };
+        std::vector<VkImageView> attachments = {};
+        if (m_resources) {
+            attachments.push_back(m_colourImageView);
+            attachments.push_back(m_depthImageView);
+        }
+        attachments.push_back(m_swapchainImageViews[i]);
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = m_renderPass;
-        framebufferInfo.attachmentCount = 1;
-        framebufferInfo.pAttachments = attachments;
+        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebufferInfo.pAttachments = attachments.data();
         framebufferInfo.width = m_swapchainExtent.width;
         framebufferInfo.height = m_swapchainExtent.height;
         framebufferInfo.layers = 1;

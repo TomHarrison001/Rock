@@ -61,6 +61,7 @@ public:
     Window* getWindow() const { return m_window; } //!< returns the window object
     VkSurfaceKHR getSurface() const { return m_surface; } //!< returns the surface
     VkDevice getDevice() const { return m_device; } //!< returns the device
+    VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; } //!< returns the device
     VkQueue getGraphicsQueue() const { return m_graphicsQueue; } //!< returns the graphics queue
     VkQueue getComputeQueue() const { return m_computeQueue; } //!< returns the compute queue
     VkQueue getPresentQueue() const { return m_presentQueue; } //!< returns the present queue
