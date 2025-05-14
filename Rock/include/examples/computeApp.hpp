@@ -1,4 +1,4 @@
-/** \file computeShaderApp.hpp */
+/** \file computeApp.hpp */
 
 #pragma once
 
@@ -10,7 +10,7 @@
 #include "core/application.hpp"
 #include "rendering/pipeline.hpp"
 
-class ComputeShaderApp : public Application
+class ComputeApp : public Application
 {
 private:
 	struct UniformBufferObject {

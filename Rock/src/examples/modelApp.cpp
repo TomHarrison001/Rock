@@ -1,6 +1,6 @@
 /** \file modelApp.cpp */
 
-#include "modelApp.hpp"
+#include "examples/modelApp.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
@@ -14,7 +14,7 @@ void ModelApp::initApplication()
     m_msaaSamples = getMaxUsableSampleCount();
     m_descriptorManager = new DescriptorManager(m_device, Swapchain::MAX_FRAMES_IN_FLIGHT);
     m_renderer = new Renderer(m_device, m_msaaSamples, true);
-    
+
     createGraphicsDescriptorSetLayout();
     createGraphicsPipeline();
     createTextureImage();

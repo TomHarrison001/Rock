@@ -40,12 +40,15 @@
     <Filter Include="Resource Files\computeApp">
       <UniqueIdentifier>{df05de16-9872-4242-8187-b091da7a2434}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\examples">
+      <UniqueIdentifier>{398b731a-7518-4203-90a8-a8e47d06e8a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\examples">
+      <UniqueIdentifier>{701ad9ca-6277-4bc5-a706-5f574eb8f70b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\computeShaderApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\core\descriptors.cpp">
@@ -69,14 +72,14 @@
     <ClCompile Include="src\window\window.cpp">
       <Filter>Source Files\window</Filter>
     </ClCompile>
-    <ClCompile Include="src\modelApp.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\examples\computeApp.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="src\examples\modelApp.cpp">
+      <Filter>Source Files\examples</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\computeShaderApp.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\core\application.hpp">
       <Filter>Header Files\core</Filter>
     </ClInclude>
@@ -104,8 +107,11 @@
     <ClInclude Include="include\window\window.hpp">
       <Filter>Header Files\window</Filter>
     </ClInclude>
-    <ClInclude Include="include\modelApp.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\examples\computeApp.hpp">
+      <Filter>Header Files\examples</Filter>
+    </ClInclude>
+    <ClInclude Include="include\examples\modelApp.hpp">
+      <Filter>Header Files\examples</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

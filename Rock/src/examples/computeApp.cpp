@@ -1,8 +1,8 @@
-/** \file computeShaderApp.cpp */
+/** \file computeApp.cpp */
 
-#include "computeShaderApp.hpp"
+#include "examples/computeApp.hpp"
 
-void ComputeShaderApp::initApplication()
+void ComputeApp::initApplication()
 {
     m_device = new Device();
     m_descriptorManager = new DescriptorManager(m_device, Swapchain::MAX_FRAMES_IN_FLIGHT);
@@ -18,7 +18,7 @@ void ComputeShaderApp::initApplication()
     createComputeDescriptorSets();
 }
 
-void ComputeShaderApp::mainLoop()
+void ComputeApp::mainLoop()
 {
     while (!m_device->getWindow()->shouldClose())
     {
@@ -27,7 +27,7 @@ void ComputeShaderApp::mainLoop()
         double currentTime = glfwGetTime();
         m_lastFrameTime = (currentTime - m_lastTime) * 1000.f;
         m_lastTime = currentTime;
-        
+
         if (m_device->isKeyPressed(GLFW_KEY_ESCAPE))
         {
             std::cout << "[EventSystem] Exiting..." << std::endl;
@@ -38,7 +38,7 @@ void ComputeShaderApp::mainLoop()
     vkDeviceWaitIdle(m_device->getDevice());
 }
 
-void ComputeShaderApp::cleanup()
+void ComputeApp::cleanup()
 {
     for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -62,7 +62,7 @@ void ComputeShaderApp::cleanup()
     m_device = nullptr;
 }
 
-void ComputeShaderApp::drawFrame()
+void ComputeApp::drawFrame()
 {
     vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getComputeInFlightFence(), VK_TRUE, UINT64_MAX);
     updateUniformBuffer(m_renderer->getCurrentFrame());
@@ -81,7 +81,7 @@ void ComputeShaderApp::drawFrame()
     m_renderer->endFrame();
 }
 
-void ComputeShaderApp::createComputeDescriptorSetLayout()
+void ComputeApp::createComputeDescriptorSetLayout()
 {
     m_descriptorManager->addBinding(Stage::COMPUTE, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
     m_descriptorManager->addBinding(Stage::COMPUTE, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
@@ -89,7 +89,7 @@ void ComputeShaderApp::createComputeDescriptorSetLayout()
     m_descriptorManager->buildDescriptorSetLayout(Stage::COMPUTE);
 }
 
-void ComputeShaderApp::createGraphicsPipeline()
+void ComputeApp::createGraphicsPipeline()
 {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -117,7 +117,7 @@ void ComputeShaderApp::createGraphicsPipeline()
     m_graphicsPipeline = new Pipeline(m_device, pipelineSettings, "./res/shaders/computeApp/vert.spv", "./res/shaders/computeApp/frag.spv");
 }
 
-void ComputeShaderApp::createComputePipeline()
+void ComputeApp::createComputePipeline()
 {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -136,7 +136,7 @@ void ComputeShaderApp::createComputePipeline()
     m_computePipeline = new Pipeline(m_device, pipelineSettings, "./res/shaders/computeApp/comp.spv");
 }
 
-void ComputeShaderApp::createShaderStorageBuffers()
+void ComputeApp::createShaderStorageBuffers()
 {
     // initialise particles
     std::default_random_engine rndEngine((unsigned)time(nullptr));
@@ -183,7 +183,7 @@ void ComputeShaderApp::createShaderStorageBuffers()
     vkFreeMemory(m_device->getDevice(), stagingBufferMemory, nullptr);
 }
 
-void ComputeShaderApp::createUniformBuffers()
+void ComputeApp::createUniformBuffers()
 {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -198,14 +198,14 @@ void ComputeShaderApp::createUniformBuffers()
     }
 }
 
-void ComputeShaderApp::createDescriptorPool()
+void ComputeApp::createDescriptorPool()
 {
     m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
     m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT) * 2);
     m_descriptorManager->buildDescriptorPool();
 }
 
-void ComputeShaderApp::createComputeDescriptorSets()
+void ComputeApp::createComputeDescriptorSets()
 {
     m_descriptorManager->allocateDescriptorSets(Stage::COMPUTE);
 
@@ -236,7 +236,7 @@ void ComputeShaderApp::createComputeDescriptorSets()
     }
 }
 
-void ComputeShaderApp::updateUniformBuffer(uint32_t currentImage)
+void ComputeApp::updateUniformBuffer(uint32_t currentImage)
 {
     UniformBufferObject ubo{};
     ubo.u_deltaTime = m_lastFrameTime * 2.f;

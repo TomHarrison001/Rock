@@ -143,11 +143,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\computeShaderApp.cpp" />
     <ClCompile Include="src\core\descriptors.cpp" />
     <ClCompile Include="src\core\device.cpp" />
+    <ClCompile Include="src\examples\computeApp.cpp" />
+    <ClCompile Include="src\examples\modelApp.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\modelApp.cpp" />
     <ClCompile Include="src\rendering\pipeline.cpp" />
     <ClCompile Include="src\rendering\renderer.cpp" />
     <ClCompile Include="src\rendering\swapchain.cpp" />
@@ -155,11 +155,11 @@
     <ClCompile Include="src\window\window.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\computeShaderApp.hpp" />
     <ClInclude Include="include\core\application.hpp" />
     <ClInclude Include="include\core\descriptors.hpp" />
     <ClInclude Include="include\core\device.hpp" />
-    <ClInclude Include="include\modelApp.hpp" />
+    <ClInclude Include="include\examples\computeApp.hpp" />
+    <ClInclude Include="include\examples\modelApp.hpp" />
     <ClInclude Include="include\rendering\pipeline.hpp" />
     <ClInclude Include="include\rendering\renderer.hpp" />
     <ClInclude Include="include\rendering\swapchain.hpp" />

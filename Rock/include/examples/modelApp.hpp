@@ -33,9 +33,9 @@ private:
         alignas(16) glm::mat4 proj;
     };
 
-	void initApplication() override;
-	void mainLoop() override;
-	void cleanup() override;
+    void initApplication() override;
+    void mainLoop() override;
+    void cleanup() override;
     void createGraphicsDescriptorSetLayout();
     void createGraphicsPipeline();
     void createTextureImage();
@@ -62,7 +62,7 @@ private:
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     bool hasStencilComponent(VkFormat format);
 public:
-	void drawFrame() override;
+    void drawFrame() override;
 private:
     Pipeline* m_graphicsPipeline;
     VkSampleCountFlagBits m_msaaSamples = VK_SAMPLE_COUNT_1_BIT; // multisample anti-aliasing

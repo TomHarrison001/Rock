@@ -1,11 +1,11 @@
 /** \file main.cpp */
 
-#include "modelApp.hpp"
-#include "computeShaderApp.hpp"
+#include "examples/modelApp.hpp"
+#include "examples/computeApp.hpp"
 
 int main() {
     Application* app = new ModelApp();
-    //Application* app = new ComputeShaderApp();
+    //Application* app = new ComputeApp();
     
     try {
         app->run();
