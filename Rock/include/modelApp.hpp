@@ -62,7 +62,6 @@ private:
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     bool hasStencilComponent(VkFormat format);
 public:
-	void run() override;
 	void drawFrame() override;
 private:
     Pipeline* m_graphicsPipeline;

@@ -70,13 +70,6 @@ void ModelApp::cleanup()
     m_device = nullptr;
 }
 
-void ModelApp::run()
-{
-    initApplication();
-    mainLoop();
-    cleanup();
-}
-
 void ModelApp::drawFrame()
 {
     vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getGraphicsInFlightFence(), VK_TRUE, UINT64_MAX);

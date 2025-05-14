@@ -29,7 +29,6 @@ private:
 	void createComputeDescriptorSets();
 	void updateUniformBuffer(uint32_t currentImage);
 public:
-	void run() override;
 	void drawFrame() override;
 private:
 	Pipeline* m_graphicsPipeline;

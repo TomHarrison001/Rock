@@ -62,13 +62,6 @@ void ComputeShaderApp::cleanup()
     m_device = nullptr;
 }
 
-void ComputeShaderApp::run()
-{
-	initApplication();
-	mainLoop();
-	cleanup();
-}
-
 void ComputeShaderApp::drawFrame()
 {
     vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getComputeInFlightFence(), VK_TRUE, UINT64_MAX);
