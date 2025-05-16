@@ -47,6 +47,7 @@ void ModelApp::mainLoop()
 
 void ModelApp::cleanup()
 {
+    m_graphicsPipeline->destroyPipelineLayout();
     vkDestroySampler(m_device->getDevice(), m_textureSampler, nullptr);
     vkDestroyImageView(m_device->getDevice(), m_textureImageView, nullptr);
     vkDestroyImage(m_device->getDevice(), m_textureImage, nullptr);
@@ -62,10 +63,10 @@ void ModelApp::cleanup()
     }
     delete m_descriptorManager;
     m_descriptorManager = nullptr;
-    delete m_renderer;
-    m_renderer = nullptr;
     delete m_graphicsPipeline;
     m_graphicsPipeline = nullptr;
+    delete m_renderer;
+    m_renderer = nullptr;
     delete m_device;
     m_device = nullptr;
 }
@@ -99,10 +100,6 @@ void ModelApp::createGraphicsPipeline()
     pipelineLayoutInfo.pushConstantRangeCount = 0; // optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // optional
 
-    VkPipelineLayout pipelineLayout;
-    if (vkCreatePipelineLayout(m_device->getDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("Failed to create render pipeline layout.");
-
     PipelineSettings pipelineSettings{};
     Pipeline::defaultPipelineSettings(pipelineSettings);
     pipelineSettings.bindingDescription = Vertex::getBindingDescription();
@@ -120,11 +117,10 @@ void ModelApp::createGraphicsPipeline()
     pipelineSettings.depthStencil.stencilTestEnable = VK_FALSE;
     pipelineSettings.depthStencil.front = {}; // optional
     pipelineSettings.depthStencil.back = {}; // optional
-    pipelineSettings.pipelineLayout = pipelineLayout;
     pipelineSettings.renderPass = m_renderer->getSwapchainRenderPass();
     pipelineSettings.subpass = 0;
 
-    m_graphicsPipeline = new Pipeline(m_device, pipelineSettings, "./res/shaders/modelApp/vert.spv", "./res/shaders/modelApp/frag.spv");
+    m_graphicsPipeline = new Pipeline(m_device, pipelineLayoutInfo, pipelineSettings, "./res/shaders/modelApp/vert.spv", "./res/shaders/modelApp/frag.spv");
 }
 
 void ModelApp::createTextureImage()

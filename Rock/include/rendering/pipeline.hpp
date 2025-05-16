@@ -27,7 +27,6 @@ struct PipelineSettings
 	VkPipelineColorBlendStateCreateInfo colourBlending; //!< colour blending
 	std::vector<VkDynamicState> dynamicStates; //!< dynamic states
 	VkPipelineDynamicStateCreateInfo dynamicState; //!< dynamic state, stores dynamic states
-	VkPipelineLayout pipelineLayout = nullptr; //!< handle to a pipeline layout object
 	VkRenderPass renderPass = nullptr; //!< handle to a render pass
 	uint32_t subpass = 0; //!< index of subpass in the render pass where this pipeline will be used
 };
@@ -38,8 +37,8 @@ struct PipelineSettings
 class Pipeline
 {
 public:
-	Pipeline(Device* device, const PipelineSettings& settings, const std::string& vertFilepath, const std::string& fragFilepath); //!< graphics pipeline constructor
-	Pipeline(Device* device, const PipelineSettings& settings, const std::string& compFilepath); //!< compute pipeline constructor
+	Pipeline(Device* device, const VkPipelineLayoutCreateInfo ci, const PipelineSettings& settings, const std::string& vertFilepath, const std::string& fragFilepath); //!< graphics pipeline constructor
+	Pipeline(Device* device, const VkPipelineLayoutCreateInfo ci, const PipelineSettings& settings, const std::string& compFilepath); //!< compute pipeline constructor
 	~Pipeline(); //!< destructor
 
 	Pipeline(const Pipeline&) = delete; //!< copy constructor
@@ -55,6 +54,7 @@ public:
 	static void defaultPipelineSettings(PipelineSettings& settings); //!< populates referenced PipelineSettings with default data
 	static void enableAlphaBlending(PipelineSettings& settings); //!< adapts referenced PipelineSettings to enable alpha blending
 	VkPipelineLayout getPipelineLayout() { return m_pipelineLayout; } //!< returns the handle to pipeline layout object
+	void destroyPipelineLayout(); //!< destroys m_pipelineLayout
 private:
 	Device* m_device; //!< device object pointer
 	VkPipeline m_pipeline; //!< handle to pipeline object

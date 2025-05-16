@@ -11,7 +11,6 @@
 #include <glm/gtx/hash.hpp>
 
 #include "core/application.hpp"
-#include "rendering/pipeline.hpp"
 
 /* \struct Vertex
 *  \brief stores the data sent to the SSBO for each vertex: position, tex coord and colour; also handles binding and attribute descriptions

@@ -7,47 +7,33 @@ Renderer::Renderer(Device* device, VkSampleCountFlagBits msaaSamples, bool resou
 {
     m_window = m_device->getWindow();
 	recreateSwapchain();
-	createCommandBuffers(false);
-	createCommandBuffers(true);
+	createCommandBuffers();
 }
 
 Renderer::~Renderer()
 {
-	freeCommandBuffers();
     delete m_swapchain;
     m_swapchain = nullptr;
 	m_device = nullptr;
 	m_window = nullptr;
 }
 
-void Renderer::createCommandBuffers(bool compute)
+void Renderer::createCommandBuffers()
 {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = m_device->getCommandPool();
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT);
 
-    if (compute)
-    {
-        m_computeCommandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
-        if (vkAllocateCommandBuffers(m_device->getDevice(), &allocInfo, m_computeCommandBuffers.data()) != VK_SUCCESS)
-            throw std::runtime_error("Failed to allocate compute command buffers.");
-    }
-    else
-    {
-        m_graphicsCommandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
-        if (vkAllocateCommandBuffers(m_device->getDevice(), &allocInfo, m_graphicsCommandBuffers.data()) != VK_SUCCESS)
-            throw std::runtime_error("Failed to allocate graphics command buffers.");
-    }
-}
+    m_graphicsCommandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    allocInfo.commandBufferCount = static_cast<uint32_t>(m_graphicsCommandBuffers.size());
+    if (vkAllocateCommandBuffers(m_device->getDevice(), &allocInfo, m_graphicsCommandBuffers.data()) != VK_SUCCESS)
+        throw std::runtime_error("Failed to allocate graphics command buffers.");
 
-void Renderer::freeCommandBuffers()
-{
-    vkFreeCommandBuffers(m_device->getDevice(), m_device->getCommandPool(), static_cast<uint32_t>(m_graphicsCommandBuffers.size()), m_graphicsCommandBuffers.data());
-    m_graphicsCommandBuffers.clear();
-    vkFreeCommandBuffers(m_device->getDevice(), m_device->getCommandPool(), static_cast<uint32_t>(m_computeCommandBuffers.size()), m_computeCommandBuffers.data());
-    m_computeCommandBuffers.clear();
+    m_computeCommandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    allocInfo.commandBufferCount = static_cast<uint32_t>(m_computeCommandBuffers.size());
+    if (vkAllocateCommandBuffers(m_device->getDevice(), &allocInfo, m_computeCommandBuffers.data()) != VK_SUCCESS)
+        throw std::runtime_error("Failed to allocate compute command buffers.");
 }
 
 void Renderer::recreateSwapchain()
@@ -89,13 +75,11 @@ void Renderer::beginFrame()
 
 void Renderer::endFrame()
 {
-    VkSemaphore waitSemaphores[] = { m_swapchain->getGraphicsFinishedSemaphore(m_currentFrame) };
-
     VkSwapchainKHR swapchains[] = { m_swapchain->getSwapchain() };
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = waitSemaphores;
+    presentInfo.pWaitSemaphores = &m_swapchain->getGraphicsFinishedSemaphore(m_currentFrame);
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapchains;
     presentInfo.pImageIndices = &m_imageIndex;
@@ -114,7 +98,7 @@ void Renderer::endFrame()
     m_currentFrame = (m_currentFrame + 1) % Swapchain::MAX_FRAMES_IN_FLIGHT;
 }
 
-void Renderer::beginSwapchainRenderPass(VkCommandBuffer commandBuffer, bool depth)
+void Renderer::beginSwapchainRenderPass(Pipeline* pipeline, VkCommandBuffer commandBuffer, bool depth)
 {
     std::vector<VkClearValue> clearColours = { {{ 0.f, 0.f, 0.f, 1.f }} };
     if (depth) clearColours.push_back({ {{1.f, 0}} });
@@ -128,6 +112,7 @@ void Renderer::beginSwapchainRenderPass(VkCommandBuffer commandBuffer, bool dept
     renderPassInfo.pClearValues = clearColours.data();
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    pipeline->bindGraphics(commandBuffer);
 
     VkViewport viewport{};
     viewport.x = 0.f;
@@ -143,11 +128,6 @@ void Renderer::beginSwapchainRenderPass(VkCommandBuffer commandBuffer, bool dept
 
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-}
-
-void Renderer::endSwapchainRenderPass(VkCommandBuffer commandBuffer)
-{
-    vkCmdEndRenderPass(commandBuffer);
 }
 
 void Renderer::recordCommandBuffer(bool compute, Pipeline* pipeline, const uint32_t m_particleCount, std::vector<VkBuffer> shaderStorageBuffers, std::vector<VkDescriptorSet> descriptorSets)
@@ -171,8 +151,7 @@ void Renderer::recordCommandBuffer(bool compute, Pipeline* pipeline, const uint3
     }
     else
     {
-        pipeline->bindGraphics(commandBuffer);
-        beginSwapchainRenderPass(commandBuffer);
+        beginSwapchainRenderPass(pipeline, commandBuffer);
 
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &shaderStorageBuffers[m_currentFrame], offsets);
@@ -197,7 +176,7 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, Vk
         throw std::runtime_error("Failed to begin recording command buffer.");
 
     pipeline->bindGraphics(commandBuffer);
-    beginSwapchainRenderPass(commandBuffer, true);
+    beginSwapchainRenderPass(pipeline, commandBuffer, true);
 
     VkBuffer vertexBuffers[] = { vertexBuffer };
     VkDeviceSize offsets[] = { 0 };

@@ -8,7 +8,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "core/application.hpp"
-#include "rendering/pipeline.hpp"
 
 /* \struct Particle
 *  \brief stores the data sent to the SSBO for each particle: position, velocity and colour; also handles binding and attribute descriptions

@@ -23,16 +23,14 @@ public:
 	VkCommandBuffer getGraphicsCommandBuffer() const { return m_graphicsCommandBuffers[m_currentFrame]; } //!< returns the graphics command buffer for the current frame
 	VkCommandBuffer getComputeCommandBuffer() const { return m_computeCommandBuffers[m_currentFrame]; } //!< returns the compute command buffer for the current frame
 	VkRenderPass getSwapchainRenderPass() const { return m_swapchain->getRenderPass(); } //!< returns the render pass from the swapchain
-	float getSwapchainAspectRatio() const { return (float)m_swapchain->getSwapchainExtent().width / (float)m_swapchain->getSwapchainExtent().height; }
+	float getSwapchainAspectRatio() const { return static_cast<float>(m_swapchain->getSwapchainExtent().width) / static_cast<float>(m_swapchain->getSwapchainExtent().height); } //!< calculates and returns swapchain aspect ratio
 private:
-	void createCommandBuffers(bool compute); //!< creates the command buffers for graphics or compute
-	void freeCommandBuffers(); //!< frees all command buffers from m_graphicsCommandBuffers and m_computeCommandBuffers
+	void createCommandBuffers(); //!< creates the command buffers for graphics and compute
 	void recreateSwapchain(); //!< recreates the swapchain when the extents change or window is resized
 public:
 	void beginFrame(); //!< acquires the next swapchain image
 	void endFrame(); //!< queues the retrieved image for rendering
-	void beginSwapchainRenderPass(VkCommandBuffer commandBuffer, bool depth = false); //!< sets the render pass info before beginning the pass
-	void endSwapchainRenderPass(VkCommandBuffer commandBuffer); //!< ends the swap chain render pass
+	void beginSwapchainRenderPass(Pipeline* pipeline, VkCommandBuffer commandBuffer, bool depth = false); //!< sets the render pass info before beginning the pass
 	void recordCommandBuffer(bool compute, Pipeline* pipeline, const uint32_t m_particleCount = 0, std::vector<VkBuffer> shaderStorageBuffers = {}, std::vector<VkDescriptorSet> descriptorSets = {}); //!< begins the current command buffer, binds the relevant pipeline, calls vkDraw or vkDispatch and ends the command buffer
 	void recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer, std::vector<VkDescriptorSet> descriptorSets, std::vector<uint32_t> indices); //!< begins the current command buffer, binds the relevant pipeline, calls vkDraw or vkDispatch and ends the command buffer
 	void submitCommandBuffer(bool compute); //!< submits the current command buffer to a device queue

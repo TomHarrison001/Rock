@@ -40,6 +40,8 @@ void ComputeApp::mainLoop()
 
 void ComputeApp::cleanup()
 {
+    m_graphicsPipeline->destroyPipelineLayout();
+    m_computePipeline->destroyPipelineLayout();
     for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
     {
         vkDestroyBuffer(m_device->getDevice(), m_uniformBuffers[i], nullptr);
@@ -52,12 +54,12 @@ void ComputeApp::cleanup()
     }
     delete m_descriptorManager;
     m_descriptorManager = nullptr;
-    delete m_renderer;
-    m_renderer = nullptr;
     delete m_graphicsPipeline;
     m_graphicsPipeline = nullptr;
     delete m_computePipeline;
     m_computePipeline = nullptr;
+    delete m_renderer;
+    m_renderer = nullptr;
     delete m_device;
     m_device = nullptr;
 }
@@ -98,10 +100,6 @@ void ComputeApp::createGraphicsPipeline()
     pipelineLayoutInfo.pushConstantRangeCount = 0; // optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // optional
 
-    VkPipelineLayout pipelineLayout;
-    if (vkCreatePipelineLayout(m_device->getDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("Failed to create render pipeline layout.");
-
     PipelineSettings pipelineSettings{};
     Pipeline::defaultPipelineSettings(pipelineSettings);
     pipelineSettings.bindingDescription = Particle::getBindingDescription();
@@ -110,11 +108,10 @@ void ComputeApp::createGraphicsPipeline()
     pipelineSettings.rasteriser.cullMode = VK_CULL_MODE_BACK_BIT;
     pipelineSettings.rasteriser.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // counter clockwise due to the Y-flip in the projection matrix
     Pipeline::enableAlphaBlending(pipelineSettings);
-    pipelineSettings.pipelineLayout = pipelineLayout;
     pipelineSettings.renderPass = m_renderer->getSwapchainRenderPass();
     pipelineSettings.subpass = 0;
 
-    m_graphicsPipeline = new Pipeline(m_device, pipelineSettings, "./res/shaders/computeApp/vert.spv", "./res/shaders/computeApp/frag.spv");
+    m_graphicsPipeline = new Pipeline(m_device, pipelineLayoutInfo, pipelineSettings, "./res/shaders/computeApp/vert.spv", "./res/shaders/computeApp/frag.spv");
 }
 
 void ComputeApp::createComputePipeline()
@@ -126,14 +123,9 @@ void ComputeApp::createComputePipeline()
     pipelineLayoutInfo.pushConstantRangeCount = 0; // optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // optional
 
-    VkPipelineLayout pipelineLayout;
-    if (vkCreatePipelineLayout(m_device->getDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("Failed to create compute pipeline layout.");
-
     PipelineSettings pipelineSettings{};
-    pipelineSettings.pipelineLayout = pipelineLayout;
 
-    m_computePipeline = new Pipeline(m_device, pipelineSettings, "./res/shaders/computeApp/comp.spv");
+    m_computePipeline = new Pipeline(m_device, pipelineLayoutInfo, pipelineSettings, "./res/shaders/computeApp/comp.spv");
 }
 
 void ComputeApp::createShaderStorageBuffers()

@@ -2,24 +2,27 @@
 
 #include "rendering/pipeline.hpp"
 
-Pipeline::Pipeline(Device* device, const PipelineSettings& settings, const std::string& vertFilepath, const std::string& fragFilepath)
+Pipeline::Pipeline(Device* device, const VkPipelineLayoutCreateInfo ci, const PipelineSettings& settings, const std::string& vertFilepath, const std::string& fragFilepath)
 	: m_device(device)
 {
-    if (settings.pipelineLayout != nullptr) m_pipelineLayout = settings.pipelineLayout;
+    if (vkCreatePipelineLayout(m_device->getDevice(), &ci, nullptr, &m_pipelineLayout) != VK_SUCCESS)
+        throw std::runtime_error("Failed to create pipeline layout.");
+
 	createGraphicsPipeline(settings, vertFilepath, fragFilepath);
 }
 
-Pipeline::Pipeline(Device* device, const PipelineSettings& settings, const std::string& compFilepath)
+Pipeline::Pipeline(Device* device, const VkPipelineLayoutCreateInfo ci, const PipelineSettings& settings, const std::string& compFilepath)
 	: m_device(device)
 {
-    if (settings.pipelineLayout != nullptr) m_pipelineLayout = settings.pipelineLayout;
+    if (vkCreatePipelineLayout(m_device->getDevice(), &ci, nullptr, &m_pipelineLayout) != VK_SUCCESS)
+        throw std::runtime_error("Failed to create pipeline layout.");
+
 	createComputePipeline(settings, compFilepath);
 }
 
 Pipeline::~Pipeline()
 {
-    vkDestroyPipelineLayout(m_device->getDevice(), m_pipelineLayout, nullptr);
-	vkDestroyPipeline(m_device->getDevice(), m_pipeline, nullptr);
+    vkDestroyPipeline(m_device->getDevice(), m_pipeline, nullptr);
 	m_device = nullptr;
 }
 
@@ -72,7 +75,7 @@ void Pipeline::createGraphicsPipeline(const PipelineSettings& settings, const st
     pipelineInfo.pDepthStencilState = &settings.depthStencil;
     pipelineInfo.pColorBlendState = &settings.colourBlending;
     pipelineInfo.pDynamicState = &settings.dynamicState;
-    pipelineInfo.layout = settings.pipelineLayout;
+    pipelineInfo.layout = m_pipelineLayout;
     pipelineInfo.renderPass = settings.renderPass;
     pipelineInfo.subpass = settings.subpass;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -103,7 +106,7 @@ void Pipeline::createComputePipeline(const PipelineSettings& settings, const std
 
     VkComputePipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-    pipelineInfo.layout = settings.pipelineLayout;
+    pipelineInfo.layout = m_pipelineLayout;
     pipelineInfo.stage = compShaderStageInfo;
 
     if (vkCreateComputePipelines(m_device->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
@@ -225,4 +228,9 @@ void Pipeline::enableAlphaBlending(PipelineSettings& settings)
     settings.colourBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
     settings.colourBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     settings.colourBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+}
+
+void Pipeline::destroyPipelineLayout()
+{
+    vkDestroyPipelineLayout(m_device->getDevice(), m_pipelineLayout, nullptr);
 }
