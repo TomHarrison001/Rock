@@ -4,7 +4,13 @@
 
 Window::Window()
 {
-	m_settings = WindowSettings("Rock");
+	m_settings = WindowSettings();
+	this->initWindow();
+}
+
+Window::Window(WindowSettings settings)
+	: m_settings(settings)
+{
 	this->initWindow();
 }
 
@@ -25,6 +31,12 @@ void Window::initWindow()
 	glfwWindowHint(GLFW_RESIZABLE, m_settings.resizable ? GLFW_TRUE : GLFW_FALSE);
 
 	m_window = glfwCreateWindow(m_settings.width, m_settings.height, m_settings.title, nullptr, nullptr);
+	if (!glfwVulkanSupported)
+	{
+		std::cout << "[GLFW] Vulkan not supported." << std::endl;
+		return;
+	}
+	
 	glfwSetWindowUserPointer(m_window, this);
 	glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
 }

@@ -5,6 +5,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <iostream>
 #include <stdexcept>
 
 /* \struct WindowSettings
@@ -12,25 +13,16 @@
 */
 struct WindowSettings
 {
-	const char* title{ "" }; //!< title on menu bar
-	float aspectRatio{ 0.f }; //!< window aspect ratio
-	uint32_t width{ 0 }; //!< width in pixels
-	uint32_t height{ 0 }; //!< height in pixels
+	const char* title{ "Rock" }; //!< title on menu bar
+	uint32_t width{ 720 }; //!< width in pixels
+	uint32_t height{ 480 }; //!< height in pixels
+	float aspectRatio{ static_cast<float>(width) / static_cast<float>(height) }; //!< window aspect ratio
 	bool fullscreen{ false }; //!< is window fullscreen
 	bool resizable{ true }; //!< can window be resized
 	bool isVsync{ false }; //!< is vsync enabled
 	bool imguiEnabled{ false }; //!< does the window host imgui
 
 	WindowSettings() { } //!< default constructor
-
-	WindowSettings(const char* newTitle, uint32_t newWidth = 720, uint32_t newHeight = 480, bool fullscreen = false, bool resizable = true) //!< constructor
-		: title{ newTitle },
-		aspectRatio{ static_cast<float>(newWidth) / static_cast<float>(newHeight) },
-		width{ newWidth },
-		height{ newHeight },
-		fullscreen{ fullscreen },
-		resizable{ resizable }
-	{ }
 };
 
 /* \class Window
@@ -40,7 +32,7 @@ class Window
 {
 public:
 	Window(); //!< default constructor
-	Window(WindowSettings settings) : m_settings(settings) { this->initWindow(); } //!< constructor
+	Window(WindowSettings settings); //!< constructor
 	~Window(); //!< destructor
 	Window(const Window&) = delete; //!< copy constructor
 	Window(const Window&&) = delete; //!< move constructor
