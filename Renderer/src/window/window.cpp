@@ -27,7 +27,7 @@ void Window::initWindow()
 
 	/* removes default opengl api */
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	/* Sets window resizable */
+	/* sets window resizable */
 	glfwWindowHint(GLFW_RESIZABLE, m_settings.resizable ? GLFW_TRUE : GLFW_FALSE);
 
 	m_window = glfwCreateWindow(m_settings.width, m_settings.height, m_settings.title, nullptr, nullptr);

@@ -3,6 +3,10 @@
 .x64/
 
 # build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
 
 # user-specific files
 *.user
