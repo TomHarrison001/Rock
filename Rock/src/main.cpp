@@ -1,12 +1,12 @@
-/** \file main.cpp */
-
 #include "examples/modelApp.hpp"
 #include "examples/computeApp.hpp"
+#include "examples/engineApp.hpp"
 
 int main() {
-    Application* app = new ModelApp();
+    //Application* app = new ModelApp();
     //Application* app = new ComputeApp();
-    
+    Application* app = new EngineApp();
+
     try {
         app->run();
     }

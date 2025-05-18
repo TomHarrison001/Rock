@@ -130,6 +130,36 @@ void Renderer::beginSwapchainRenderPass(Pipeline* pipeline, VkCommandBuffer comm
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
+void Renderer::beginSwapchainRenderPass(VkClearValue& clearColour)
+{
+    std::vector<VkClearValue> clearColours = { clearColour };
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = m_swapchain->getRenderPass();
+    renderPassInfo.framebuffer = m_swapchain->getFramebuffer(m_imageIndex);
+    renderPassInfo.renderArea.offset = { 0, 0 };
+    renderPassInfo.renderArea.extent = m_swapchain->getSwapchainExtent();
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearColours.size());
+    renderPassInfo.pClearValues = clearColours.data();
+
+    vkCmdBeginRenderPass(m_graphicsCommandBuffers[m_currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    
+    VkViewport viewport{};
+    viewport.x = 0.f;
+    viewport.y = 0.f;
+    viewport.width = static_cast<float>(m_swapchain->getSwapchainExtent().width);
+    viewport.height = static_cast<float>(m_swapchain->getSwapchainExtent().height);
+    viewport.minDepth = 0.f;
+    viewport.maxDepth = 1.f;
+    
+    VkRect2D scissor{};
+    scissor.offset = { 0, 0 };
+    scissor.extent = m_swapchain->getSwapchainExtent();
+    
+    vkCmdSetViewport(m_graphicsCommandBuffers[m_currentFrame], 0, 1, &viewport);
+    vkCmdSetScissor(m_graphicsCommandBuffers[m_currentFrame], 0, 1, &scissor);
+}
+
 void Renderer::recordCommandBuffer(bool compute, Pipeline* pipeline, const uint32_t m_particleCount, std::vector<VkBuffer> shaderStorageBuffers, std::vector<VkDescriptorSet> descriptorSets)
 {
     VkCommandBuffer commandBuffer;
