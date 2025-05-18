@@ -54,9 +54,20 @@ private:
         "VK_LAYER_KHRONOS_validation"
     };
 
+    const std::vector<const char*> instanceExtensions = {
+        VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+        VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME
+    };
+#ifndef VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME
     const std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
+#else
+    const std::vector<const char*> deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME
+    };
+#endif
 public:
     Window* getWindow() const { return m_window; } //!< returns the window object
     VkSurfaceKHR getSurface() const { return m_surface; } //!< returns the surface
@@ -88,6 +99,7 @@ private:
     bool isDeviceSuitable(VkPhysicalDevice device); //!< checks if the input device supports the required extensions and swapchains
     std::vector<const char*> getRequiredExtensions(); //!< returns the required extensions
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device); //!< returns the indices of physical device queue families
+    bool checkInstanceExtensionSupport(); //!< checks the instance supports all the required extensions
     bool checkDeviceExtensionSupport(VkPhysicalDevice device); //!< checks the device supports all the required extensions
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device); //!< gets swap chain support details for input device
 public:

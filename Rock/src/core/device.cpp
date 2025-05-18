@@ -5,7 +5,7 @@
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
-    std::cerr << "Validation layer: " << pCallbackData->pMessage << std::endl;
+    std::cerr << "[Vulkan]: " << pCallbackData->pMessage << std::endl;
     return VK_FALSE;
 }
 
@@ -73,21 +73,29 @@ void Device::createInstance()
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+    appInfo.apiVersion = VK_API_VERSION_1_3;
 
     VkInstanceCreateInfo ci{};
     ci.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     ci.pApplicationInfo = &appInfo;
 
     auto extensions = getRequiredExtensions();
-    ci.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-    ci.ppEnabledExtensionNames = extensions.data();
+    if (!checkInstanceExtensionSupport())
+        throw std::runtime_error("Instance extensions requested but not available.");
+
+    for (const char* extension : instanceExtensions)
+    {
+        extensions.push_back(extension);
+    }
+
+    ci.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     if (enableValidationLayers)
     {
         ci.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         ci.ppEnabledLayerNames = validationLayers.data();
+        extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
         populateDebugMessengerCreateInfo(debugCreateInfo);
         ci.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
     }
@@ -96,6 +104,9 @@ void Device::createInstance()
         ci.enabledLayerCount = 0;
         ci.pNext = nullptr;
     }
+
+    ci.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    ci.ppEnabledExtensionNames = extensions.data();
 
     if (vkCreateInstance(&ci, nullptr, &m_instance) != VK_SUCCESS)
         throw std::runtime_error("Failed to create instance.");
@@ -294,6 +305,23 @@ QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device)
     }
 
     return indices;
+}
+
+bool Device::checkInstanceExtensionSupport()
+{
+    uint32_t extensionCount;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(instanceExtensions.begin(), instanceExtensions.end());
+
+    for (const auto& extension : availableExtensions)
+    {
+        requiredExtensions.erase(extension.extensionName);
+    }
+
+    return requiredExtensions.empty();
 }
 
 bool Device::checkDeviceExtensionSupport(VkPhysicalDevice device)
