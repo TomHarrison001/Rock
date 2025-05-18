@@ -18,24 +18,6 @@ Renderer::~Renderer()
 	m_window = nullptr;
 }
 
-void Renderer::createCommandBuffers()
-{
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = m_device->getCommandPool();
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-
-    m_graphicsCommandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
-    allocInfo.commandBufferCount = static_cast<uint32_t>(m_graphicsCommandBuffers.size());
-    if (vkAllocateCommandBuffers(m_device->getDevice(), &allocInfo, m_graphicsCommandBuffers.data()) != VK_SUCCESS)
-        throw std::runtime_error("Failed to allocate graphics command buffers.");
-
-    m_computeCommandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
-    allocInfo.commandBufferCount = static_cast<uint32_t>(m_computeCommandBuffers.size());
-    if (vkAllocateCommandBuffers(m_device->getDevice(), &allocInfo, m_computeCommandBuffers.data()) != VK_SUCCESS)
-        throw std::runtime_error("Failed to allocate compute command buffers.");
-}
-
 void Renderer::recreateSwapchain()
 {
     VkExtent2D extent = m_window->getExtent();
@@ -58,6 +40,24 @@ void Renderer::recreateSwapchain()
     }
     else
         m_swapchain = new Swapchain(m_device, m_msaaSamples, m_resources);
+}
+
+void Renderer::createCommandBuffers()
+{
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = m_device->getCommandPool();
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+    m_graphicsCommandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    allocInfo.commandBufferCount = static_cast<uint32_t>(m_graphicsCommandBuffers.size());
+    if (vkAllocateCommandBuffers(m_device->getDevice(), &allocInfo, m_graphicsCommandBuffers.data()) != VK_SUCCESS)
+        throw std::runtime_error("Failed to allocate graphics command buffers.");
+
+    m_computeCommandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    allocInfo.commandBufferCount = static_cast<uint32_t>(m_computeCommandBuffers.size());
+    if (vkAllocateCommandBuffers(m_device->getDevice(), &allocInfo, m_computeCommandBuffers.data()) != VK_SUCCESS)
+        throw std::runtime_error("Failed to allocate compute command buffers.");
 }
 
 void Renderer::beginFrame()

@@ -26,6 +26,7 @@ public:
     VkFormat getSwapchainDepthFormat() const { return m_swapchainDepthFormat; } //!< used to check that new/old swapchains have the same depth format
     VkExtent2D getSwapchainExtent() const { return m_swapchainExtent; } //!< returns the swapchain extent (could be different to window due to surface capabilities)
     VkRenderPass getRenderPass() const { return m_renderPass; } //!< returns render pass for the pipeline
+    uint32_t getImageCount() const { return m_swapchainImages.size(); } //!< returns the number of images in swapchain images
     VkFramebuffer getFramebuffer(int index) { return m_swapchainFramebuffers[index]; } //!< returns the framebuffer for the command buffer
     VkSemaphore& getImageAvailableSemaphore(uint32_t currentFrame) { return m_imageAvailableSemaphores[currentFrame]; } //!< image available semaphore getter method for current frame
     VkSemaphore& getGraphicsFinishedSemaphore(uint32_t currentFrame) { return m_graphicsFinishedSemaphores[currentFrame]; } //!< graphics finished semaphore getter method for current frame

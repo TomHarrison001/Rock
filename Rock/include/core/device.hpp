@@ -70,6 +70,7 @@ private:
 #endif
 public:
     Window* getWindow() const { return m_window; } //!< returns the window object
+    VkInstance getInstance() const { return m_instance; } //!< returns the vulkan instance
     VkSurfaceKHR getSurface() const { return m_surface; } //!< returns the surface
     VkDevice getDevice() const { return m_device; } //!< returns the device
     VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; } //!< returns the device

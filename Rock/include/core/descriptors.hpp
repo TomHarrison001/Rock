@@ -16,6 +16,7 @@ public:
 	DescriptorManager(const DescriptorManager&) = delete; //!< copy constructor
 	DescriptorManager& operator=(const DescriptorManager&) = delete; //!< copy assignment
 public:
+	VkDescriptorPool getDescriptorPool() { return m_descriptorPool; } //!< returns the descriptor pool
 	VkDescriptorSetLayout* getGraphicsDescriptorSetLayout() { return &m_graphicsDescriptorSetLayout; } //!< returns a pointer to the graphics descriptor set layout
 	VkDescriptorSetLayout* getComputeDescriptorSetLayout() { return &m_computeDescriptorSetLayout; } //!< returns a pointer to the compute descriptor set layout
 	VkDescriptorSetLayoutBinding getDescriptorSetLayoutBinding(bool compute, uint32_t index) { return (compute) ? m_computeBindings[index] : m_graphicsBindings[index]; } //!< returns the descriptor set layout binding for the input stage and index
