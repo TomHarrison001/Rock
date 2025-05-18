@@ -151,6 +151,13 @@
     <ClCompile Include="src\rendering\pipeline.cpp" />
     <ClCompile Include="src\rendering\renderer.cpp" />
     <ClCompile Include="src\rendering\swapchain.cpp" />
+    <ClCompile Include="src\vendor\imgui\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="src\vendor\imgui\backends\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="src\vendor\imgui\imgui.cpp" />
+    <ClCompile Include="src\vendor\imgui\imgui_demo.cpp" />
+    <ClCompile Include="src\vendor\imgui\imgui_draw.cpp" />
+    <ClCompile Include="src\vendor\imgui\imgui_tables.cpp" />
+    <ClCompile Include="src\vendor\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\window\eventSystem.cpp" />
     <ClCompile Include="src\window\window.cpp" />
   </ItemGroup>
@@ -165,6 +172,14 @@
     <ClInclude Include="include\rendering\swapchain.hpp" />
     <ClInclude Include="include\window\eventSystem.hpp" />
     <ClInclude Include="include\window\window.hpp" />
+    <ClInclude Include="src\vendor\imgui\backends\imgui_impl_glfw.h" />
+    <ClInclude Include="src\vendor\imgui\backends\imgui_impl_vulkan.h" />
+    <ClInclude Include="src\vendor\imgui\imconfig.h" />
+    <ClInclude Include="src\vendor\imgui\imgui.h" />
+    <ClInclude Include="src\vendor\imgui\imgui_internal.h" />
+    <ClInclude Include="src\vendor\imgui\imstb_rectpack.h" />
+    <ClInclude Include="src\vendor\imgui\imstb_textedit.h" />
+    <ClInclude Include="src\vendor\imgui\imstb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="res\shaders\computeApp\main.comp" />

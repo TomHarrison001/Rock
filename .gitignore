@@ -1,12 +1,15 @@
-# Visual Studio 2015/2017 cache/options directory
+# visual studio 2015/2017 cache/options directory
 .vs/
 .x64/
 
-# Build results
+# build results
 [Dd]ebug/
 [Rr]elease/
 x64/
 x86/
 
-# User-specific files
+# user-specific files
 *.user
+
+# imgui configuration file
+imgui.ini
