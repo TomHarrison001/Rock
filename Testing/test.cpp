@@ -4,6 +4,7 @@
 // variables
 const int WIDTH = 1280;
 const int HEIGHT = 720;
+const int MAX_FRAMES_IN_FLIGHT = 2;
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -30,8 +31,8 @@ VkFormat m_swapchainImageFormat;
 VkFormat m_swapchainDepthFormat;
 VkExtent2D m_swapchainExtent;
 VkRenderPass m_renderPass;
-std::vector<VkImage> m_swapchainImages;
 std::vector<VkImageView> m_swapchainImageViews;
+std::vector<VkImage> m_swapchainImages;
 std::vector<VkDeviceMemory> m_swapchainImageMemory;
 std::vector<VkFramebuffer> m_framebuffers;
 std::vector<VkSemaphore> m_semaphores;
@@ -39,6 +40,28 @@ std::vector<VkFence> m_fences;
 
 Test::~Test()
 {
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        vkDestroySemaphore(m_device, m_semaphores[i], nullptr);
+        vkDestroyFence(m_device, m_fences[i], nullptr);
+    }
+    m_semaphores.clear();
+    m_fences.clear();
+    for (auto framebuffer : m_framebuffers)
+    {
+        vkDestroyFramebuffer(m_device, framebuffer, nullptr);
+    }
+    m_framebuffers.clear();
+    vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+    for (int i = 0; i < m_swapchainImages.size(); i++)
+    {
+        vkDestroyImageView(m_device, m_swapchainImageViews[i], nullptr);
+        //vkDestroyImage(m_device, m_swapchainImages[i], nullptr);
+        //vkFreeMemory(m_device, m_swapchainImageMemory[i], nullptr);
+    }
+    m_swapchainImageViews.clear();
+    m_swapchainImages.clear();
+    m_swapchainImageMemory.clear();
     vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
     vkDestroyDevice(m_device, nullptr);
     vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
@@ -422,4 +445,112 @@ TEST(SwapchainTests, CreateSwapchain)
     m_swapchainImageFormat = surfaceFormat.format;
     m_swapchainExtent = extent;
     m_swapchainDepthFormat = findDepthFormat();
+}
+
+TEST(SwapchainTests, CreateImageViews)
+{
+    m_swapchainImageViews.resize(m_swapchainImages.size());
+    //m_swapchainImageMemory.resize(m_swapchainImages.size());
+
+    for (size_t i = 0; i < m_swapchainImages.size(); i++)
+    {
+        VkImageViewCreateInfo ci{};
+        ci.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        ci.image = m_swapchainImages[i];
+        ci.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        ci.format = m_swapchainImageFormat;
+        ci.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        ci.subresourceRange.baseMipLevel = 0;
+        ci.subresourceRange.levelCount = 1;
+        ci.subresourceRange.baseArrayLayer = 0;
+        ci.subresourceRange.layerCount = 1;
+
+        VkImageView imageView;
+        ASSERT_EQ(vkCreateImageView(m_device, &ci, nullptr, &imageView), VK_SUCCESS);
+
+        m_swapchainImageViews[i] = imageView;
+    }
+}
+
+TEST(SwapchainTests, CreateRenderPass)
+{
+    VkAttachmentDescription colourAttachment{};
+    colourAttachment.format = m_swapchainImageFormat;
+    colourAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colourAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colourAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colourAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colourAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colourAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colourAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference colourAttachmentRef{};
+    colourAttachmentRef.attachment = 0;
+    colourAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colourAttachmentRef;
+
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    std::vector<VkAttachmentDescription> attachments = { colourAttachment };
+
+    VkRenderPassCreateInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    renderPassInfo.pAttachments = attachments.data();
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
+
+    ASSERT_EQ(vkCreateRenderPass(m_device, &renderPassInfo, nullptr, &m_renderPass), VK_SUCCESS);
+}
+
+TEST(SwapchainTests, CreateFramebuffers)
+{
+    m_framebuffers.resize(m_swapchainImageViews.size());
+
+    for (size_t i = 0; i < m_swapchainImageViews.size(); i++)
+    {
+        std::vector<VkImageView> attachments = { m_swapchainImageViews[i] };
+
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = m_renderPass;
+        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebufferInfo.pAttachments = attachments.data();
+        framebufferInfo.width = m_swapchainExtent.width;
+        framebufferInfo.height = m_swapchainExtent.height;
+        framebufferInfo.layers = 1;
+
+        ASSERT_EQ(vkCreateFramebuffer(m_device, &framebufferInfo, nullptr, &m_framebuffers[i]), VK_SUCCESS);
+    }
+}
+
+TEST(SwapchainTests, CreateSyncObjects)
+{
+    m_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    m_fences.resize(MAX_FRAMES_IN_FLIGHT);
+
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        ASSERT_EQ(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_semaphores[i]), VK_SUCCESS);
+        ASSERT_EQ(vkCreateFence(m_device, &fenceInfo, nullptr, &m_fences[i]), VK_SUCCESS);
+    }
 }
