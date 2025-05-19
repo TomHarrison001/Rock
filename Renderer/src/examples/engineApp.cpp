@@ -68,38 +68,93 @@ void EngineApp::drawFrame()
     ImGui::NewFrame();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-    // show demo window
-    if (m_showDemoWindow)
-        ImGui::ShowDemoWindow(&m_showDemoWindow);
+    /****************************
+    *     MainMenuBar           *
+    ****************************/
 
-    // show custom window
-    {
-        static float f = 0.f;
-        static int counter = 0;
+    createMainMenuBar(m_device);
 
-        ImGui::Begin("Hello imgui"); // create window called hello imgui
-        ImGui::Text("Some useful text"); // display text
-        ImGui::Checkbox("Demo", &m_showDemoWindow);
-        ImGui::Checkbox("Window", &m_showAnotherWindow);
-        ImGui::SliderFloat("float", &f, 0.f, 1.f);
-        ImGui::ColorEdit3("Clear colour", (float*)&m_clearColour);
+    /****************************
+    *     FpsCounter            *
+    ****************************/
 
-        if (ImGui::Button("Button"))
-            counter++;
-        ImGui::SameLine();
-        ImGui::Text("Counter: %d", counter);
-        ImGui::Text("Average %.3f ms/frame (%.1f FPS)", 1000.f / io.Framerate, io.Framerate);
-        ImGui::End();
-    }
+    createOverlay(io.Framerate);
 
-    if (m_showAnotherWindow)
-    {
-        ImGui::Begin("Window", &m_showAnotherWindow);
-        ImGui::Text("Hello new window.");
-        if (ImGui::Button("Close"))
-            m_showAnotherWindow = false;
-        ImGui::End();
-    }
+    /****************************
+    *     Dockspace             *
+    ****************************/
+
+    ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
+
+    /****************************
+    *     Viewport              *
+    ****************************/
+
+    ImGui::Begin("Viewport");
+    ImGui::Text("VIEWPORT TEXT");
+    ImGui::End();
+
+    /****************************
+    *     Editor                *
+    ****************************/
+
+    ImGui::Begin("Editor");
+    ImGui::Text("DOCUMENTTTT");
+    ImGui::End();
+
+    /****************************
+    *     Scene hierarchy       *
+    ****************************/
+
+    ImGui::Begin("Scene");
+    ImGui::Text("HIERARCHY");
+    ImGui::End();
+
+    /****************************
+    *     File manager          *
+    ****************************/
+
+    ImGui::Begin("File Manager");
+    ImGui::Text("File manager");
+    ImGui::End();
+
+    /****************************
+    *     Properties            *
+    ****************************/
+
+    ImGui::Begin("Properties");
+    ImGui::Text("PROPERTIES");
+    ImGui::End();
+
+    /****************************
+    *     Console               *
+    ****************************/
+
+    static Console console;
+    console.draw("Console");
+
+    //// show demo window
+    //if (m_showDemoWindow)
+    //    ImGui::ShowDemoWindow(&m_showDemoWindow);
+    //
+    //// show custom window
+    //{
+    //    static float f = 0.f;
+    //    static int counter = 0;
+    //
+    //    ImGui::Begin("Hello imgui"); // create window called hello imgui
+    //    ImGui::Text("Some useful text"); // display text
+    //    ImGui::Checkbox("Demo", &m_showDemoWindow);
+    //    ImGui::SliderFloat("float", &f, 0.f, 1.f);
+    //    ImGui::ColorEdit3("Clear colour", (float*)&m_clearColour);
+    //
+    //    if (ImGui::Button("Button"))
+    //        counter++;
+    //    ImGui::SameLine();
+    //    ImGui::Text("Counter: %d", counter);
+    //    ImGui::Text("Average %.3f ms/frame (%.1f FPS)", 1000.f / io.Framerate, io.Framerate);
+    //    ImGui::End();
+    //}
 
     ImGui::Render();
     ImDrawData* drawData = ImGui::GetDrawData();
@@ -134,6 +189,7 @@ void EngineApp::initialiseImgui()
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // enable keyboard controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // enable gamepad controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // enable docking
+    io.ConfigDockingWithShift = false; // hold shift to disable docking instead of hold shift to enable docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // enable multi-viewport / platform windows
     
     ImGui::StyleColorsLight();

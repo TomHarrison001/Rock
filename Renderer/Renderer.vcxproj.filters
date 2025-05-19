@@ -164,6 +164,9 @@
     <ClInclude Include="include\examples\engineApp.hpp">
       <Filter>Header Files\examples</Filter>
     </ClInclude>
+    <ClInclude Include="include\window\ui.hpp">
+      <Filter>Header Files\window</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="res\shaders\modelApp\main.frag">
