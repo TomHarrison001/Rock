@@ -23,7 +23,6 @@ public:
 private:
     void createDescriptorPool();
     void initialiseImgui();
-    void loadFont();
     void frameRender(ImDrawData* drawData);
     void framePresent();
 private:

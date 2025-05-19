@@ -144,6 +144,9 @@ void EngineApp::initialiseImgui()
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
 
+    // load font
+    io.Fonts->AddFontFromFileTTF("./res/fonts/Segoe-UI-Variable-Static-Text-Semibold.ttf", 16.f);
+
     // setup platform/renderer backends
     ImGui_ImplGlfw_InitForVulkan(m_device->getWindow()->getWindow(), true);
     ImGui_ImplVulkan_InitInfo init_info = {};
@@ -163,13 +166,6 @@ void EngineApp::initialiseImgui()
     init_info.Allocator = nullptr;
     init_info.CheckVkResultFn = check_vk_result;
     ImGui_ImplVulkan_Init(&init_info);
-}
-
-void EngineApp::loadFont()
-{
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.Fonts->AddFontDefault();
-    io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.f);
 }
 
 void EngineApp::frameRender(ImDrawData* drawData)
