@@ -88,7 +88,7 @@ private:
     void initApplication() override;
     void mainLoop() override;
     void cleanup() override;
-    void createGraphicsDescriptorSetLayout();
+    void createDescriptorSetLayout();
     void createGraphicsPipeline();
     void createTextureImage();
     void createTextureImageView();
@@ -98,7 +98,7 @@ private:
     void createIndexBuffer();
     void createUniformBuffers();
     void createDescriptorPool();
-    void createGraphicsDescriptorSets();
+    void createDescriptorSets();
 
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);

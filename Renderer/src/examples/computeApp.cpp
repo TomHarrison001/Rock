@@ -9,13 +9,13 @@ void ComputeApp::initApplication()
     m_renderer = new Renderer(m_device);
     m_lastTime = glfwGetTime();
 
-    createComputeDescriptorSetLayout();
+    createDescriptorSetLayout();
     createGraphicsPipeline();
     createComputePipeline();
     createShaderStorageBuffers();
     createUniformBuffers();
     createDescriptorPool();
-    createComputeDescriptorSets();
+    createDescriptorSets();
 }
 
 void ComputeApp::mainLoop()
@@ -70,7 +70,7 @@ void ComputeApp::drawFrame()
     updateUniformBuffer(m_renderer->getCurrentFrame());
     vkResetFences(m_device->getDevice(), 1, &m_renderer->getInFlightFence());
     vkResetCommandBuffer(m_renderer->getComputeCommandBuffer(), 0);
-    m_renderer->recordCommandBuffer(true, m_computePipeline, m_particleCount, {}, m_descriptorManager->getDescriptorSets(true));
+    m_renderer->recordCommandBuffer(true, m_computePipeline, m_particleCount, {}, m_descriptorManager->getDescriptorSets());
     m_renderer->submitCommandBuffer(true);
 
     vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getInFlightFence(), VK_TRUE, UINT64_MAX);
@@ -83,12 +83,12 @@ void ComputeApp::drawFrame()
     m_renderer->endFrame();
 }
 
-void ComputeApp::createComputeDescriptorSetLayout()
+void ComputeApp::createDescriptorSetLayout()
 {
-    m_descriptorManager->addBinding(true, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
-    m_descriptorManager->addBinding(true, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
-    m_descriptorManager->addBinding(true, 2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
-    m_descriptorManager->buildDescriptorSetLayout(true);
+    m_descriptorManager->addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+    m_descriptorManager->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+    m_descriptorManager->addBinding(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+    m_descriptorManager->buildDescriptorSetLayout();
 }
 
 void ComputeApp::createGraphicsPipeline()
@@ -119,7 +119,7 @@ void ComputeApp::createComputePipeline()
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = m_descriptorManager->getComputeDescriptorSetLayout();
+    pipelineLayoutInfo.pSetLayouts = m_descriptorManager->getDescriptorSetLayout();
     pipelineLayoutInfo.pushConstantRangeCount = 0; // optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // optional
 
@@ -197,9 +197,9 @@ void ComputeApp::createDescriptorPool()
     m_descriptorManager->buildDescriptorPool();
 }
 
-void ComputeApp::createComputeDescriptorSets()
+void ComputeApp::createDescriptorSets()
 {
-    m_descriptorManager->allocateDescriptorSets(true);
+    m_descriptorManager->allocateDescriptorSets();
 
     for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -208,23 +208,23 @@ void ComputeApp::createComputeDescriptorSets()
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(UniformBufferObject);
 
-        m_descriptorManager->addWriteDescriptorSet(true, 0, &bufferInfo, nullptr);
+        m_descriptorManager->addWriteDescriptorSet(0, &bufferInfo, nullptr);
 
         VkDescriptorBufferInfo lastFrameInfo{};
         lastFrameInfo.buffer = m_shaderStorageBuffers[(i - 1) % Swapchain::MAX_FRAMES_IN_FLIGHT];
         lastFrameInfo.offset = 0;
         lastFrameInfo.range = sizeof(Particle) * m_particleCount;
 
-        m_descriptorManager->addWriteDescriptorSet(true, 1, &lastFrameInfo, nullptr);
+        m_descriptorManager->addWriteDescriptorSet(1, &lastFrameInfo, nullptr);
 
         VkDescriptorBufferInfo currentFrameInfo{};
         currentFrameInfo.buffer = m_shaderStorageBuffers[i];
         currentFrameInfo.offset = 0;
         currentFrameInfo.range = sizeof(Particle) * m_particleCount;
 
-        m_descriptorManager->addWriteDescriptorSet(true, 2, &currentFrameInfo, nullptr);
+        m_descriptorManager->addWriteDescriptorSet(2, &currentFrameInfo, nullptr);
 
-        m_descriptorManager->overwrite(true, i);
+        m_descriptorManager->overwrite(i);
     }
 }
 

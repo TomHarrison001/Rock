@@ -15,7 +15,7 @@ void ModelApp::initApplication()
     m_descriptorManager = new DescriptorManager(m_device, Swapchain::MAX_FRAMES_IN_FLIGHT);
     m_renderer = new Renderer(m_device, m_msaaSamples, true);
 
-    createGraphicsDescriptorSetLayout();
+    createDescriptorSetLayout();
     createGraphicsPipeline();
     createTextureImage();
     createTextureImageView();
@@ -25,7 +25,7 @@ void ModelApp::initApplication()
     createIndexBuffer();
     createUniformBuffers();
     createDescriptorPool();
-    createGraphicsDescriptorSets();
+    createDescriptorSets();
 }
 
 void ModelApp::mainLoop()
@@ -78,17 +78,17 @@ void ModelApp::drawFrame()
     updateUniformBuffer(m_renderer->getCurrentFrame());
     vkResetFences(m_device->getDevice(), 1, &m_renderer->getInFlightFence());
     vkResetCommandBuffer(m_renderer->getGraphicsCommandBuffer(), 0);
-    m_renderer->recordCommandBuffer(m_graphicsPipeline, m_vertexBuffer, m_indexBuffer, m_descriptorManager->getDescriptorSets(false), m_indices);
+    m_renderer->recordCommandBuffer(m_graphicsPipeline, m_vertexBuffer, m_indexBuffer, m_descriptorManager->getDescriptorSets(), m_indices);
     m_renderer->submitCommandBuffer();
 
     m_renderer->endFrame();
 }
 
-void ModelApp::createGraphicsDescriptorSetLayout()
+void ModelApp::createDescriptorSetLayout()
 {
-    m_descriptorManager->addBinding(false, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
-    m_descriptorManager->addBinding(false, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    m_descriptorManager->buildDescriptorSetLayout(false);
+    m_descriptorManager->addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+    m_descriptorManager->addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    m_descriptorManager->buildDescriptorSetLayout();
 }
 
 void ModelApp::createGraphicsPipeline()
@@ -96,7 +96,7 @@ void ModelApp::createGraphicsPipeline()
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = m_descriptorManager->getGraphicsDescriptorSetLayout();
+    pipelineLayoutInfo.pSetLayouts = m_descriptorManager->getDescriptorSetLayout();
     pipelineLayoutInfo.pushConstantRangeCount = 0; // optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // optional
 
@@ -293,9 +293,9 @@ void ModelApp::createDescriptorPool()
     m_descriptorManager->buildDescriptorPool();
 }
 
-void ModelApp::createGraphicsDescriptorSets()
+void ModelApp::createDescriptorSets()
 {
-    m_descriptorManager->allocateDescriptorSets(false);
+    m_descriptorManager->allocateDescriptorSets();
 
     for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -304,16 +304,16 @@ void ModelApp::createGraphicsDescriptorSets()
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(UniformBufferObject);
 
-        m_descriptorManager->addWriteDescriptorSet(false, 0, &bufferInfo, nullptr);
+        m_descriptorManager->addWriteDescriptorSet(0, &bufferInfo, nullptr);
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         imageInfo.imageView = m_textureImageView;
         imageInfo.sampler = m_textureSampler;
 
-        m_descriptorManager->addWriteDescriptorSet(false, 1, nullptr, &imageInfo);
+        m_descriptorManager->addWriteDescriptorSet(1, nullptr, &imageInfo);
 
-        m_descriptorManager->overwrite(false, i);
+        m_descriptorManager->overwrite(i);
     }
 }
 

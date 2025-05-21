@@ -60,13 +60,13 @@ private:
 	void initApplication() override;
 	void mainLoop() override;
 	void cleanup() override;
-	void createComputeDescriptorSetLayout();
+	void createDescriptorSetLayout();
 	void createGraphicsPipeline();
 	void createComputePipeline();
 	void createShaderStorageBuffers();
 	void createUniformBuffers();
 	void createDescriptorPool();
-	void createComputeDescriptorSets();
+	void createDescriptorSets();
 	void updateUniformBuffer(uint32_t currentImage);
 public:
 	void drawFrame() override;
