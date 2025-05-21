@@ -73,10 +73,10 @@ void ModelApp::cleanup()
 
 void ModelApp::drawFrame()
 {
-    vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getGraphicsInFlightFence(), VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getInFlightFence(), VK_TRUE, UINT64_MAX);
     m_renderer->beginFrame();
     updateUniformBuffer(m_renderer->getCurrentFrame());
-    vkResetFences(m_device->getDevice(), 1, &m_renderer->getGraphicsInFlightFence());
+    vkResetFences(m_device->getDevice(), 1, &m_renderer->getInFlightFence());
     vkResetCommandBuffer(m_renderer->getGraphicsCommandBuffer(), 0);
     m_renderer->recordCommandBuffer(m_graphicsPipeline, m_vertexBuffer, m_indexBuffer, m_descriptorManager->getDescriptorSets(false), m_indices);
     m_renderer->submitCommandBuffer();

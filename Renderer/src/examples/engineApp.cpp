@@ -226,9 +226,9 @@ void EngineApp::initialiseImgui()
 
 void EngineApp::frameRender(ImDrawData* drawData)
 {
-    vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getGraphicsInFlightFence(), VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getInFlightFence(), VK_TRUE, UINT64_MAX);
     m_renderer->beginFrame();
-    vkResetFences(m_device->getDevice(), 1, &m_renderer->getGraphicsInFlightFence());
+    vkResetFences(m_device->getDevice(), 1, &m_renderer->getInFlightFence());
     vkResetCommandBuffer(m_renderer->getGraphicsCommandBuffer(), 0);
 
     {
@@ -267,7 +267,7 @@ void EngineApp::frameRender(ImDrawData* drawData)
         info.pSignalSemaphores = &m_renderer->getGraphicsFinishedSemaphore();
 
         vkEndCommandBuffer(m_renderer->getGraphicsCommandBuffer());
-        vkQueueSubmit(m_device->getGraphicsQueue(), 1, &info, m_renderer->getGraphicsInFlightFence());
+        vkQueueSubmit(m_device->getGraphicsQueue(), 1, &info, m_renderer->getInFlightFence());
     }
 }
 

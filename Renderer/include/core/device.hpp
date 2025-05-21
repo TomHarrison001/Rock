@@ -75,7 +75,6 @@ public:
     VkDevice getDevice() const { return m_device; } //!< returns the device
     VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; } //!< returns the device
     VkQueue getGraphicsQueue() const { return m_graphicsQueue; } //!< returns the graphics queue
-    VkQueue getComputeQueue() const { return m_computeQueue; } //!< returns the compute queue
     VkQueue getPresentQueue() const { return m_presentQueue; } //!< returns the present queue
     VkCommandPool getCommandPool() const { return m_commandPool; } //!< returns the command pool
 
@@ -120,7 +119,6 @@ private:
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE; //!< physical device
     VkDevice m_device; //!< device
     VkQueue m_graphicsQueue; //!< graphics queue
-    VkQueue m_computeQueue; //!< compute queue
     VkQueue m_presentQueue; //!< present queue
     VkCommandPool m_commandPool; //!< command pool
 };

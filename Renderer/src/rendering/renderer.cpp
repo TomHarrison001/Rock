@@ -230,7 +230,7 @@ void Renderer::submitCommandBuffer(bool compute)
 
     if (!compute)
     {
-        VkSemaphore waitSemaphores[] = { m_swapchain->getComputeFinishedSemaphore(m_currentFrame), m_swapchain->getImageAvailableSemaphore(m_currentFrame) };
+        VkSemaphore waitSemaphores[] = { m_swapchain->getGraphicsFinishedSemaphore(m_currentFrame), m_swapchain->getImageAvailableSemaphore(m_currentFrame) };
         VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
         submitInfo.waitSemaphoreCount = 2;
@@ -238,9 +238,9 @@ void Renderer::submitCommandBuffer(bool compute)
         submitInfo.pWaitDstStageMask = waitStages;
     }
 
-    VkSemaphore semaphore = (compute) ? m_swapchain->getComputeFinishedSemaphore(m_currentFrame) : m_swapchain->getGraphicsFinishedSemaphore(m_currentFrame);
-    VkQueue queue = (compute) ? m_device->getComputeQueue() : m_device->getGraphicsQueue();
-    VkFence fence = (compute) ? m_swapchain->getComputeInFlightFence(m_currentFrame) : m_swapchain->getGraphicsInFlightFence(m_currentFrame);
+    VkSemaphore semaphore = m_swapchain->getGraphicsFinishedSemaphore(m_currentFrame);
+    VkQueue queue = m_device->getGraphicsQueue();
+    VkFence fence = m_swapchain->getInFlightFence(m_currentFrame);
 
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
@@ -270,6 +270,6 @@ void Renderer::submitCommandBuffer()
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(m_device->getGraphicsQueue(), 1, &submitInfo, m_swapchain->getGraphicsInFlightFence(m_currentFrame)) != VK_SUCCESS)
+    if (vkQueueSubmit(m_device->getGraphicsQueue(), 1, &submitInfo, m_swapchain->getInFlightFence(m_currentFrame)) != VK_SUCCESS)
         throw std::runtime_error("Failed to submit command buffer.");
 }

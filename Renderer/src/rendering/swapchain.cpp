@@ -58,9 +58,7 @@ Swapchain::~Swapchain()
     {
         vkDestroySemaphore(m_device->getDevice(), m_imageAvailableSemaphores[i], nullptr);
         vkDestroySemaphore(m_device->getDevice(), m_graphicsFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(m_device->getDevice(), m_computeFinishedSemaphores[i], nullptr);
-        vkDestroyFence(m_device->getDevice(), m_graphicsInFlightFences[i], nullptr);
-        vkDestroyFence(m_device->getDevice(), m_computeInFlightFences[i], nullptr);
+        vkDestroyFence(m_device->getDevice(), m_inFlightFences[i], nullptr);
     }
     m_device = nullptr;
 }
@@ -265,9 +263,7 @@ void Swapchain::createSyncObjects()
 {
     m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     m_graphicsFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    m_computeFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    m_graphicsInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-    m_computeInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    m_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -280,11 +276,8 @@ void Swapchain::createSyncObjects()
     {
         if (vkCreateSemaphore(m_device->getDevice(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
             vkCreateSemaphore(m_device->getDevice(), &semaphoreInfo, nullptr, &m_graphicsFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(m_device->getDevice(), &fenceInfo, nullptr, &m_graphicsInFlightFences[i]) != VK_SUCCESS)
-            throw std::runtime_error("Failed to create graphics synchronisation objects for a frame.");
-        if (vkCreateSemaphore(m_device->getDevice(), &semaphoreInfo, nullptr, &m_computeFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(m_device->getDevice(), &fenceInfo, nullptr, &m_computeInFlightFences[i]) != VK_SUCCESS)
-            throw std::runtime_error("Failed to create compute synchronisation objects for a frame.");
+            vkCreateFence(m_device->getDevice(), &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create synchronisation objects for a frame.");
     }
 }
 

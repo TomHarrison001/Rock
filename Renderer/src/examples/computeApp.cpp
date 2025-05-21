@@ -66,16 +66,16 @@ void ComputeApp::cleanup()
 
 void ComputeApp::drawFrame()
 {
-    vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getComputeInFlightFence(), VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getInFlightFence(), VK_TRUE, UINT64_MAX);
     updateUniformBuffer(m_renderer->getCurrentFrame());
-    vkResetFences(m_device->getDevice(), 1, &m_renderer->getComputeInFlightFence());
+    vkResetFences(m_device->getDevice(), 1, &m_renderer->getInFlightFence());
     vkResetCommandBuffer(m_renderer->getComputeCommandBuffer(), 0);
     m_renderer->recordCommandBuffer(true, m_computePipeline, m_particleCount, {}, m_descriptorManager->getDescriptorSets(true));
     m_renderer->submitCommandBuffer(true);
 
-    vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getGraphicsInFlightFence(), VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getInFlightFence(), VK_TRUE, UINT64_MAX);
     m_renderer->beginFrame();
-    vkResetFences(m_device->getDevice(), 1, &m_renderer->getGraphicsInFlightFence());
+    vkResetFences(m_device->getDevice(), 1, &m_renderer->getInFlightFence());
     vkResetCommandBuffer(m_renderer->getGraphicsCommandBuffer(), 0);
     m_renderer->recordCommandBuffer(false, m_graphicsPipeline, m_particleCount, m_shaderStorageBuffers, {});
     m_renderer->submitCommandBuffer(false);

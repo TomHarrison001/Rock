@@ -22,9 +22,7 @@ public:
 	VkSwapchainKHR getSwapchain() { return m_swapchain->getSwapchain(); } //!< returns the current swapchain
 	VkSemaphore& getImageAvailableSemaphore() const { return m_swapchain->getImageAvailableSemaphore(m_currentFrame); } //!< returns the image available semaphore for the current frame from the swapchain
 	VkSemaphore& getGraphicsFinishedSemaphore() const { return m_swapchain->getGraphicsFinishedSemaphore(m_currentFrame); } //!< returns the graphics semaphore for the current frame from the swapchain
-	VkSemaphore& getComputeFinishedSemaphore() const { return m_swapchain->getComputeFinishedSemaphore(m_currentFrame); } //!< returns the compute semaphore for the current frame from the swapchain
-	VkFence& getGraphicsInFlightFence() const { return m_swapchain->getGraphicsInFlightFence(m_currentFrame); } //!< returns the graphics in flight fence for the current frame from the swapchain
-	VkFence& getComputeInFlightFence() const { return m_swapchain->getComputeInFlightFence(m_currentFrame); } //!< returns the compute in flight fence for the current frame from the swapchain
+	VkFence& getInFlightFence() const { return m_swapchain->getInFlightFence(m_currentFrame); } //!< returns the in flight fence for the current frame from the swapchain
 	VkCommandBuffer getGraphicsCommandBuffer() const { return m_graphicsCommandBuffers[m_currentFrame]; } //!< returns the graphics command buffer for the current frame
 	VkCommandBuffer getComputeCommandBuffer() const { return m_computeCommandBuffers[m_currentFrame]; } //!< returns the compute command buffer for the current frame
 	VkRenderPass getSwapchainRenderPass() const { return m_swapchain->getRenderPass(); } //!< returns the render pass from the swapchain
