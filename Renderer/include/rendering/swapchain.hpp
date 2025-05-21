@@ -8,6 +8,8 @@
 #include <memory>
 #include <algorithm>
 
+//#define FRAMERATE_CAP
+
 /* \class Swapchain
 *  \brief handles the swapchain lifecycle including images, image views, image memory, framebuffers and render passes
 */

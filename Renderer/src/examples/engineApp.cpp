@@ -91,7 +91,6 @@ void EngineApp::drawFrame()
     ****************************/
 
     ImGui::Begin("Viewport");
-    ImGui::Text("VIEWPORT TEXT");
     ImGui::End();
 
     /****************************
@@ -99,7 +98,14 @@ void EngineApp::drawFrame()
     ****************************/
 
     ImGui::Begin("Editor");
-    ImGui::Text("DOCUMENTTTT");
+    ImGui::Text("main.cpp");
+    ImGui::Text("");
+    ImGui::Text("#include <iostream>");
+    ImGui::Text("");
+    ImGui::Text("int main(int argc, char* argv[])");
+    ImGui::Text("    return 0;");
+    ImGui::Text("}");
+    ImGui::Text("");
     ImGui::End();
 
     /****************************
@@ -107,7 +113,23 @@ void EngineApp::drawFrame()
     ****************************/
 
     ImGui::Begin("Scene");
-    ImGui::Text("HIERARCHY");
+    ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+    if (ImGui::TreeNode("Scene"))
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            ImGui::PushID(i);
+            if (ImGui::TreeNode("", "GameObject %d", i + 1))
+            {
+                ImGui::Text("Transform");
+                ImGui::SameLine();
+                if (ImGui::SmallButton("Edit")) {}
+                ImGui::TreePop();
+            }
+            ImGui::PopID();
+        }
+        ImGui::TreePop();
+    }
     ImGui::End();
 
     /****************************
@@ -123,7 +145,13 @@ void EngineApp::drawFrame()
     ****************************/
 
     ImGui::Begin("Properties");
-    ImGui::Text("PROPERTIES");
+    ImGui::Text("GameObject 1");
+    static float translation[3] = { 0.f, 0.f, 0.f };
+    ImGui::DragFloat3("Translation", translation, 0.5f, -50.f, 50.f);
+    static float rotation[3] = { 0.f, 0.f, 0.f };
+    ImGui::DragFloat3("Rotation", rotation, 1.f, -180.f, 180.f);
+    static float scale[3] = { 1.f, 1.f, 1.f };
+    ImGui::DragFloat3("Scale", scale, 1.f, 0.f, 10.f);
     ImGui::End();
 
     /****************************
