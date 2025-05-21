@@ -49,15 +49,10 @@ void Renderer::createCommandBuffers()
     allocInfo.commandPool = m_device->getCommandPool();
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 
-    m_graphicsCommandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
-    allocInfo.commandBufferCount = static_cast<uint32_t>(m_graphicsCommandBuffers.size());
-    if (vkAllocateCommandBuffers(m_device->getDevice(), &allocInfo, m_graphicsCommandBuffers.data()) != VK_SUCCESS)
+    m_commandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    allocInfo.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size());
+    if (vkAllocateCommandBuffers(m_device->getDevice(), &allocInfo, m_commandBuffers.data()) != VK_SUCCESS)
         throw std::runtime_error("Failed to allocate graphics command buffers.");
-
-    m_computeCommandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
-    allocInfo.commandBufferCount = static_cast<uint32_t>(m_computeCommandBuffers.size());
-    if (vkAllocateCommandBuffers(m_device->getDevice(), &allocInfo, m_computeCommandBuffers.data()) != VK_SUCCESS)
-        throw std::runtime_error("Failed to allocate compute command buffers.");
 }
 
 void Renderer::beginFrame()
@@ -142,7 +137,7 @@ void Renderer::beginSwapchainRenderPass(VkClearValue& clearColour)
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearColours.size());
     renderPassInfo.pClearValues = clearColours.data();
 
-    vkCmdBeginRenderPass(m_graphicsCommandBuffers[m_currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(m_commandBuffers[m_currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     
     VkViewport viewport{};
     viewport.x = 0.f;
@@ -156,14 +151,14 @@ void Renderer::beginSwapchainRenderPass(VkClearValue& clearColour)
     scissor.offset = { 0, 0 };
     scissor.extent = m_swapchain->getSwapchainExtent();
     
-    vkCmdSetViewport(m_graphicsCommandBuffers[m_currentFrame], 0, 1, &viewport);
-    vkCmdSetScissor(m_graphicsCommandBuffers[m_currentFrame], 0, 1, &scissor);
+    vkCmdSetViewport(m_commandBuffers[m_currentFrame], 0, 1, &viewport);
+    vkCmdSetScissor(m_commandBuffers[m_currentFrame], 0, 1, &scissor);
 }
 
 void Renderer::recordCommandBuffer(bool compute, Pipeline* pipeline, const uint32_t m_particleCount, std::vector<VkBuffer> shaderStorageBuffers, std::vector<VkDescriptorSet> descriptorSets)
 {
     VkCommandBuffer commandBuffer;
-    commandBuffer = compute ? m_computeCommandBuffers[m_currentFrame] : m_graphicsCommandBuffers[m_currentFrame];
+    commandBuffer = m_commandBuffers[m_currentFrame];
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -195,7 +190,7 @@ void Renderer::recordCommandBuffer(bool compute, Pipeline* pipeline, const uint3
 
 void Renderer::recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer, std::vector<VkDescriptorSet> descriptorSets, std::vector<uint32_t> indices)
 {
-    VkCommandBuffer commandBuffer = m_graphicsCommandBuffers[m_currentFrame];
+    VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -223,7 +218,7 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, Vk
 void Renderer::submitCommandBuffer(bool compute)
 {
     VkCommandBuffer commandBuffer;
-    commandBuffer = (compute) ? m_computeCommandBuffers[m_currentFrame] : m_graphicsCommandBuffers[m_currentFrame];
+    commandBuffer = m_commandBuffers[m_currentFrame];
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -240,7 +235,7 @@ void Renderer::submitCommandBuffer(bool compute)
 
     VkSemaphore semaphore = m_swapchain->getGraphicsFinishedSemaphore(m_currentFrame);
     VkQueue queue = m_device->getGraphicsQueue();
-    VkFence fence = m_swapchain->getInFlightFence(m_currentFrame);
+    VkFence fence = m_swapchain->getFence(m_currentFrame);
 
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
@@ -253,7 +248,7 @@ void Renderer::submitCommandBuffer(bool compute)
 
 void Renderer::submitCommandBuffer()
 {
-    VkCommandBuffer commandBuffer = m_graphicsCommandBuffers[m_currentFrame];
+    VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
 
     VkSemaphore waitSemaphores[] = { m_swapchain->getImageAvailableSemaphore(m_currentFrame) };
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -270,6 +265,6 @@ void Renderer::submitCommandBuffer()
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(m_device->getGraphicsQueue(), 1, &submitInfo, m_swapchain->getInFlightFence(m_currentFrame)) != VK_SUCCESS)
+    if (vkQueueSubmit(m_device->getGraphicsQueue(), 1, &submitInfo, m_swapchain->getFence(m_currentFrame)) != VK_SUCCESS)
         throw std::runtime_error("Failed to submit command buffer.");
 }

@@ -226,16 +226,16 @@ void EngineApp::initialiseImgui()
 
 void EngineApp::frameRender(ImDrawData* drawData)
 {
-    vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getInFlightFence(), VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getFence(), VK_TRUE, UINT64_MAX);
     m_renderer->beginFrame();
-    vkResetFences(m_device->getDevice(), 1, &m_renderer->getInFlightFence());
-    vkResetCommandBuffer(m_renderer->getGraphicsCommandBuffer(), 0);
+    vkResetFences(m_device->getDevice(), 1, &m_renderer->getFence());
+    vkResetCommandBuffer(m_renderer->getCommandBuffer(), 0);
 
     {
         VkCommandBufferBeginInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        vkBeginCommandBuffer(m_renderer->getGraphicsCommandBuffer(), &info);
+        vkBeginCommandBuffer(m_renderer->getCommandBuffer(), &info);
     }
 
     {
@@ -248,13 +248,13 @@ void EngineApp::frameRender(ImDrawData* drawData)
     }
 
     // record dear imgui primitives into command buffer
-    ImGui_ImplVulkan_RenderDrawData(drawData, m_renderer->getGraphicsCommandBuffer());
+    ImGui_ImplVulkan_RenderDrawData(drawData, m_renderer->getCommandBuffer());
 
     // Submit command buffer
-    vkCmdEndRenderPass(m_renderer->getGraphicsCommandBuffer());
+    vkCmdEndRenderPass(m_renderer->getCommandBuffer());
 
     {
-        VkCommandBuffer commandBuffer = m_renderer->getGraphicsCommandBuffer();
+        VkCommandBuffer commandBuffer = m_renderer->getCommandBuffer();
         VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         VkSubmitInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -266,8 +266,8 @@ void EngineApp::frameRender(ImDrawData* drawData)
         info.signalSemaphoreCount = 1;
         info.pSignalSemaphores = &m_renderer->getGraphicsFinishedSemaphore();
 
-        vkEndCommandBuffer(m_renderer->getGraphicsCommandBuffer());
-        vkQueueSubmit(m_device->getGraphicsQueue(), 1, &info, m_renderer->getInFlightFence());
+        vkEndCommandBuffer(m_renderer->getCommandBuffer());
+        vkQueueSubmit(m_device->getGraphicsQueue(), 1, &info, m_renderer->getFence());
     }
 }
 

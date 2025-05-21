@@ -22,9 +22,8 @@ public:
 	VkSwapchainKHR getSwapchain() { return m_swapchain->getSwapchain(); } //!< returns the current swapchain
 	VkSemaphore& getImageAvailableSemaphore() const { return m_swapchain->getImageAvailableSemaphore(m_currentFrame); } //!< returns the image available semaphore for the current frame from the swapchain
 	VkSemaphore& getGraphicsFinishedSemaphore() const { return m_swapchain->getGraphicsFinishedSemaphore(m_currentFrame); } //!< returns the graphics semaphore for the current frame from the swapchain
-	VkFence& getInFlightFence() const { return m_swapchain->getInFlightFence(m_currentFrame); } //!< returns the in flight fence for the current frame from the swapchain
-	VkCommandBuffer getGraphicsCommandBuffer() const { return m_graphicsCommandBuffers[m_currentFrame]; } //!< returns the graphics command buffer for the current frame
-	VkCommandBuffer getComputeCommandBuffer() const { return m_computeCommandBuffers[m_currentFrame]; } //!< returns the compute command buffer for the current frame
+	VkFence& getFence() const { return m_swapchain->getFence(m_currentFrame); } //!< returns the in flight fence for the current frame from the swapchain
+	VkCommandBuffer getCommandBuffer() const { return m_commandBuffers[m_currentFrame]; } //!< returns the graphics command buffer for the current frame
 	VkRenderPass getSwapchainRenderPass() const { return m_swapchain->getRenderPass(); } //!< returns the render pass from the swapchain
 	VkFramebuffer getSwapchainFramebuffer() const { return m_swapchain->getFramebuffer(m_currentFrame); } //!< returns the swapchain framebuffer for the current frame
 	float getSwapchainAspectRatio() const { return static_cast<float>(m_swapchain->getSwapchainExtent().width) / static_cast<float>(m_swapchain->getSwapchainExtent().height); } //!< calculates and returns swapchain aspect ratio
@@ -46,8 +45,7 @@ private:
 	Window* m_window; //!< window object pointer
 	Device* m_device; //!< device object pointer
 	Swapchain* m_swapchain; //!< pointer to active swapchain
-	std::vector<VkCommandBuffer> m_graphicsCommandBuffers; //!< vector for graphics command buffers
-	std::vector<VkCommandBuffer> m_computeCommandBuffers; //!< vector for compute command buffers
+	std::vector<VkCommandBuffer> m_commandBuffers; //!< vector for command buffers
 
 	uint32_t m_imageIndex; //!< index of next image for present info and framebuffer index
 	uint32_t m_currentFrame = 0; //!< stores the current frame

@@ -30,7 +30,7 @@ public:
     VkFramebuffer getFramebuffer(int index) { return m_swapchainFramebuffers[index]; } //!< returns the framebuffer for the command buffer
     VkSemaphore& getImageAvailableSemaphore(uint32_t currentFrame) { return m_imageAvailableSemaphores[currentFrame]; } //!< image available semaphore getter method for current frame
     VkSemaphore& getGraphicsFinishedSemaphore(uint32_t currentFrame) { return m_graphicsFinishedSemaphores[currentFrame]; } //!< graphics finished semaphore getter method for current frame
-    VkFence& getInFlightFence(uint32_t currentFrame) { return m_inFlightFences[currentFrame]; } //!< in flight fence getter method for current frame
+    VkFence& getFence(uint32_t currentFrame) { return m_fences[currentFrame]; } //!< in flight fence getter method for current frame
     bool getResources() const { return m_resources; } //!< returns if the swapchain should create images, image views and image memory for colour and depth
     bool operator!=(const Swapchain* swapchain) const {
         return swapchain->getSwapchainImageFormat() != m_swapchainImageFormat ||
@@ -62,7 +62,7 @@ private:
     std::vector<VkFramebuffer> m_swapchainFramebuffers; //!< swapchain framebuffers
     std::vector<VkSemaphore> m_imageAvailableSemaphores; //!< semaphores for image availability
     std::vector<VkSemaphore> m_graphicsFinishedSemaphores; //!< semaphores for graphics shaders
-    std::vector<VkFence> m_inFlightFences; //!< in flight fences
+    std::vector<VkFence> m_fences; //!< in flight fences
     
     VkImage m_colourImage; //!< image for colour image resource
     VkDeviceMemory m_colourImageMemory; //!< memory for colour image resource
