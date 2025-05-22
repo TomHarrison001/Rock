@@ -97,19 +97,20 @@ TEST(PhysicsEngine, ClampTest)
     ASSERT_EQ(f, 4.f);
 
     Rock::Vector v(1.f, 1.f, 1.f);
-    v = Rock::clamp(v, 0.f, 0.f);
+    v.clamp(0.f, 0.f);
     ASSERT_EQ(v, Rock::Vector(0.f, 0.f, 0.f));
-    ASSERT_ANY_THROW(Rock::clamp(v, 10.f, 0.f));
+    ASSERT_ANY_THROW(v.clamp(10.f, 0.f));
     v = Rock::Vector(0.f, 5.f, 10.f);
-    v = Rock::clamp(v, 4.f, 10.f);
+    v.clamp(4.f, 10.f);
     ASSERT_EQ(v, Rock::Vector(4.f, 5.f, 10.f));
-    v = Rock::clamp(v, 0.f, 6.f);
+    v.clamp(0.f, 6.f);
     ASSERT_EQ(v, Rock::Vector(4.f, 5.f, 6.f));
 
     v = Rock::Vector(0.f, 5.f, 10.f);
     Rock::Vector min(10.f, 0.f, -10.f);
     Rock::Vector max(10.f, 4.f, 0.f);
-    ASSERT_EQ(Rock::clamp(v, min, max), Rock::Vector(10.f, 4.f, 0.f));
+    v.clamp(min, max);
+    ASSERT_EQ(v, Rock::Vector(10.f, 4.f, 0.f));
 }
 
 TEST(PhysicsEngine, TestVectorClass)
@@ -151,6 +152,11 @@ TEST(PhysicsEngine, TestVectorClass)
     ASSERT_EQ(v1.distance(v2), 5.f);
     ASSERT_EQ(v1.dot(v2), 49.f);
     ASSERT_EQ(v1.cross(v2), Rock::Vector(0.f, 0.f, -7.f));
+}
+
+TEST(PhysicsEngine, TestTransformClass)
+{
+    Rock::Transform(glm::vec3(0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f));
 }
 
 TEST(WindowTests, CreateWindow)
