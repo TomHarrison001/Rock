@@ -62,7 +62,7 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.4.309.0\Include;$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\gtest\include;$(SolutionDir)Renderer\include;$(SolutionDir)Renderer\src\vendor;$(SolutionDir)Renderer\src;$(SolutionDir)Physics\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.4.309.0\Include;$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\gtest\include;$(SolutionDir)Dependencies;$(SolutionDir)Renderer\include;$(SolutionDir)Renderer\src;$(SolutionDir)Physics\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -100,7 +100,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.4.309.0\Include;$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\gtest\include;$(SolutionDir)Renderer\include;$(SolutionDir)Renderer\src\vendor;$(SolutionDir)Renderer\src;$(SolutionDir)Physics\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.4.309.0\Include;$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\gtest\include;$(SolutionDir)Dependencies;$(SolutionDir)Renderer\include;$(SolutionDir)Renderer\src;$(SolutionDir)Physics\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
