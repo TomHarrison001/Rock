@@ -76,6 +76,27 @@ int Test::RunTests(int argc, char* argv[])
 	return RUN_ALL_TESTS();
 }
 
+TEST(PhysicsEngine, ClampTest)
+{
+    int i = 5;
+    i = Rock::clamp(i, 4, 4);
+    ASSERT_EQ(i, 4);
+    ASSERT_ANY_THROW(Rock::clamp(i, 10, 0));
+    i = Rock::clamp(i, 6, 10);
+    ASSERT_EQ(i, 6);
+    i = Rock::clamp(i, 0, 4);
+    ASSERT_EQ(i, 4);
+
+    float f = 5.f;
+    f = Rock::clamp(f, 4.f, 4.f);
+    ASSERT_EQ(f, 4.f);
+    ASSERT_ANY_THROW(Rock::clamp(f, 10.f, 0.f));
+    f = Rock::clamp(f, 6.f, 10.f);
+    ASSERT_EQ(f, 6.f);
+    f = Rock::clamp(f, 0.f, 4.f);
+    ASSERT_EQ(f, 4.f);
+}
+
 TEST(WindowTests, CreateWindow)
 {
 	ASSERT_TRUE(glfwInit());

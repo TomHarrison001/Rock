@@ -58,5 +58,8 @@
 #include "examples/computeApp.hpp"
 #include "examples/engineApp.hpp"
 
+// physics engine
+#include "math.hpp"
+
 // used for google test
 #include "gtest/gtest.h"

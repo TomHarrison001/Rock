@@ -993,6 +993,8 @@ WARN_LOGFILE           =
 
 INPUT                  = ./Renderer/include \
                          ./Renderer/src \
+                         ./Physics/include \
+                         ./Physics/src \
                          ./README.md
 
 
