@@ -62,6 +62,7 @@
 #include "math.hpp"
 #include "vector.hpp"
 #include "transform.hpp"
+#include "collision.hpp"
 
 // used for google test
 #include "gtest/gtest.h"

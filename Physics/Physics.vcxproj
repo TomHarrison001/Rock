@@ -129,6 +129,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\collision.hpp" />
     <ClInclude Include="include\math.hpp" />
     <ClInclude Include="include\transform.hpp" />
     <ClInclude Include="include\vector.hpp" />
