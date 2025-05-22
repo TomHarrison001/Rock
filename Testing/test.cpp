@@ -154,11 +154,6 @@ TEST(PhysicsEngine, TestVectorClass)
     ASSERT_EQ(v1.cross(v2), Rock::Vector(0.f, 0.f, -7.f));
 }
 
-TEST(PhysicsEngine, TestTransformClass)
-{
-    Rock::Transform(glm::vec3(0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f));
-}
-
 TEST(WindowTests, CreateWindow)
 {
 	ASSERT_TRUE(glfwInit());

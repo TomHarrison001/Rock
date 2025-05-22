@@ -61,6 +61,7 @@
 // physics engine
 #include "math.hpp"
 #include "vector.hpp"
+#include "transform.hpp"
 
 // used for google test
 #include "gtest/gtest.h"
