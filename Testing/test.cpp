@@ -95,6 +95,62 @@ TEST(PhysicsEngine, ClampTest)
     ASSERT_EQ(f, 6.f);
     f = Rock::clamp(f, 0.f, 4.f);
     ASSERT_EQ(f, 4.f);
+
+    Rock::Vector v(1.f, 1.f, 1.f);
+    v = Rock::clamp(v, 0.f, 0.f);
+    ASSERT_EQ(v, Rock::Vector(0.f, 0.f, 0.f));
+    ASSERT_ANY_THROW(Rock::clamp(v, 10.f, 0.f));
+    v = Rock::Vector(0.f, 5.f, 10.f);
+    v = Rock::clamp(v, 4.f, 10.f);
+    ASSERT_EQ(v, Rock::Vector(4.f, 5.f, 10.f));
+    v = Rock::clamp(v, 0.f, 6.f);
+    ASSERT_EQ(v, Rock::Vector(4.f, 5.f, 6.f));
+
+    v = Rock::Vector(0.f, 5.f, 10.f);
+    Rock::Vector min(10.f, 0.f, -10.f);
+    Rock::Vector max(10.f, 4.f, 0.f);
+    ASSERT_EQ(Rock::clamp(v, min, max), Rock::Vector(10.f, 4.f, 0.f));
+}
+
+TEST(PhysicsEngine, TestVectorClass)
+{
+    Rock::Vector v1(1.f, 1.f);
+    Rock::Vector v2(4.f, 2.f);
+    Rock::Vector result(0.f, 0.f);
+
+    result = -v1;
+    ASSERT_EQ(result, Rock::Vector(-1.f, -1.f));
+
+    result = v1 - v2;
+    ASSERT_EQ(result, Rock::Vector(-3.f, -1.f));
+
+    result = v1 + v2;
+    ASSERT_EQ(result, Rock::Vector(5.f, 3.f));
+
+    result = v1 * v2;
+    ASSERT_EQ(result, Rock::Vector(4.f, 2.f));
+
+    float n = 5.f;
+    result = v1 * n;
+    ASSERT_EQ(result, Rock::Vector(5.f, 5.f));
+
+    result = v1 / v2;
+    ASSERT_EQ(result, Rock::Vector(0.25f, 0.5f));
+
+    result = v1 / n;
+    ASSERT_EQ(result, Rock::Vector(0.2f, 0.2f));
+
+    ASSERT_TRUE(v1 == v1);
+    ASSERT_FALSE(v1 == v2);
+
+    v1 = Rock::Vector(3.f, 4.f);
+    v2 = Rock::Vector(7.f, 7.f);
+
+    ASSERT_EQ(v1.length(), 5.f);
+    ASSERT_EQ(v1.normalise(), Rock::Vector(0.6f, 0.8f, 0.f));
+    ASSERT_EQ(v1.distance(v2), 5.f);
+    ASSERT_EQ(v1.dot(v2), 49.f);
+    ASSERT_EQ(v1.cross(v2), Rock::Vector(0.f, 0.f, -7.f));
 }
 
 TEST(WindowTests, CreateWindow)
