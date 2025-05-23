@@ -154,6 +154,41 @@ TEST(PhysicsEngine, TestVectorClass)
     ASSERT_EQ(v1.cross(v2), Rock::Vector(0.f, 0.f, -7.f));
 }
 
+TEST(PhysicsEngine, TestCollisions)
+{
+    // test OBB/OBB collisions
+    Rock::OBBCollider obb1, obb2;
+    obb1 = Rock::OBBCollider(Rock::Transform(glm::vec3(5.1f, 2.6f, 0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(5.f, 10.f, 0.f)));
+    obb2 = Rock::OBBCollider(Rock::Transform(glm::vec3(15.f, 7.5f, 0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(10.f, 5.f, 0.f)));
+    ASSERT_FALSE(obbIntersectingOBB(obb1, obb2));
+    obb1 = Rock::OBBCollider(Rock::Transform(glm::vec3(5.1f, 2.6f, 0.f), glm::vec3(0.f, 0.f, 3.1415926f / 2.f), glm::vec3(5.f, 10.f, 0.f)));
+    obb2 = Rock::OBBCollider(Rock::Transform(glm::vec3(15.f, 7.5f, 0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(10.f, 5.f, 0.f)));
+    ASSERT_TRUE(obbIntersectingOBB(obb1, obb2));
+    obb1 = Rock::OBBCollider(Rock::Transform(glm::vec3(0.5f, 0.5f, 0.5f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)));
+    obb2 = Rock::OBBCollider(Rock::Transform(glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)));
+    ASSERT_TRUE(obbIntersectingOBB(obb1, obb2));
+    obb1 = Rock::OBBCollider(Rock::Transform(glm::vec3(1.f, 1.f, 1.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(2.f, 2.f, 2.f)));
+    obb2 = Rock::OBBCollider(Rock::Transform(glm::vec3(-1.1f, -1.f, -1.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(2.f, 2.f, 2.f)));
+    ASSERT_FALSE(obbIntersectingOBB(obb1, obb2));
+
+    // test Sphere/Sphere collisions
+    Rock::SphereCollider sphere1, sphere2;
+    sphere1 = Rock::SphereCollider(Rock::Transform(glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)), 1.f);
+    sphere2 = Rock::SphereCollider(Rock::Transform(glm::vec3(1.f, 1.f, 1.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)), 1.f);
+    ASSERT_TRUE(sphereIntersectingSphere(sphere1, sphere2));
+    sphere1 = Rock::SphereCollider(Rock::Transform(glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)), 1.f);
+    sphere2 = Rock::SphereCollider(Rock::Transform(glm::vec3(2.f, 2.f, 2.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)), 1.f);
+    ASSERT_FALSE(sphereIntersectingSphere(sphere1, sphere2));
+
+    // test OBB/Sphere collision
+    obb1 = Rock::OBBCollider(Rock::Transform(glm::vec3(0.0f, 0.f, 0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)));
+    sphere1 = Rock::SphereCollider(Rock::Transform(glm::vec3(0.78f, 0.78f, 0.78f), glm::vec3(0.f), glm::vec3(1.f)), 0.5f);
+    ASSERT_TRUE(obbIntersectingSphere(obb1, sphere1));
+    obb1 = Rock::OBBCollider(Rock::Transform(glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)));
+    sphere1 = Rock::SphereCollider(Rock::Transform(glm::vec3(0.79f, 0.79f, 0.79f), glm::vec3(0.f), glm::vec3(1.f)), 0.5f);
+    ASSERT_FALSE(obbIntersectingSphere(obb1, sphere1));
+}
+
 TEST(WindowTests, CreateWindow)
 {
 	ASSERT_TRUE(glfwInit());
