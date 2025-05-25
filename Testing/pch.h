@@ -62,10 +62,14 @@
 #include "examples/engineApp.hpp"
 
 // physics engine
-#include "math.hpp"
-#include "vector.hpp"
-#include "transform.hpp"
-#include "collision.hpp"
+#include "mathematics/mathematics.hpp"
+#include "mathematics/vector2.hpp"
+#include "mathematics/vector3.hpp"
+#include "mathematics/matrix2.hpp"
+#include "mathematics/matrix3.hpp"
+#include "components/transformComponent.hpp"
+#include "components/colliderComponent.hpp"
+#include "components/rigidbodyComponent.hpp"
 
 // used for google test
 #include "gtest/gtest.h"

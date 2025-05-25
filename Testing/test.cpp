@@ -1,7 +1,15 @@
 #include "pch.h"
 #include "test.h"
 
-// variables
+// variables for Physics testing
+entt::registry m_entities;
+entt::entity gameObject{ entt::null };
+entt::entity obb1{ entt::null };
+entt::entity obb2{ entt::null };
+entt::entity sphere1{ entt::null };
+entt::entity sphere2{ entt::null };
+
+// variables for Renderer testing
 const int WIDTH = 1280;
 const int HEIGHT = 720;
 const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -76,7 +84,7 @@ int Test::RunTests(int argc, char* argv[])
 	return RUN_ALL_TESTS();
 }
 
-TEST(PhysicsEngine, ClampTest)
+TEST(PhysicsEngine, TestClamp)
 {
     int i = 5;
     i = Rock::clamp(i, 4, 4);
@@ -96,97 +104,249 @@ TEST(PhysicsEngine, ClampTest)
     f = Rock::clamp(f, 0.f, 4.f);
     ASSERT_EQ(f, 4.f);
 
-    Rock::Vector v(1.f, 1.f, 1.f);
+    Rock::Vector3 v(1.f, 1.f, 1.f);
     v.clamp(0.f, 0.f);
-    ASSERT_EQ(v, Rock::Vector(0.f, 0.f, 0.f));
+    ASSERT_EQ(v, Rock::Vector3(0.f, 0.f, 0.f));
     ASSERT_ANY_THROW(v.clamp(10.f, 0.f));
-    v = Rock::Vector(0.f, 5.f, 10.f);
+    v = Rock::Vector3(0.f, 5.f, 10.f);
     v.clamp(4.f, 10.f);
-    ASSERT_EQ(v, Rock::Vector(4.f, 5.f, 10.f));
+    ASSERT_EQ(v, Rock::Vector3(4.f, 5.f, 10.f));
     v.clamp(0.f, 6.f);
-    ASSERT_EQ(v, Rock::Vector(4.f, 5.f, 6.f));
+    ASSERT_EQ(v, Rock::Vector3(4.f, 5.f, 6.f));
 
-    v = Rock::Vector(0.f, 5.f, 10.f);
-    Rock::Vector min(10.f, 0.f, -10.f);
-    Rock::Vector max(10.f, 4.f, 0.f);
+    v = Rock::Vector3(0.f, 5.f, 10.f);
+    Rock::Vector3 min(10.f, 0.f, -10.f);
+    Rock::Vector3 max(10.f, 4.f, 0.f);
     v.clamp(min, max);
-    ASSERT_EQ(v, Rock::Vector(10.f, 4.f, 0.f));
+    ASSERT_EQ(v, Rock::Vector3(10.f, 4.f, 0.f));
 }
 
-TEST(PhysicsEngine, TestVectorClass)
+TEST(PhysicsEngine, TestSUVATeqns)
 {
-    Rock::Vector v1(1.f, 1.f);
-    Rock::Vector v2(4.f, 2.f);
-    Rock::Vector result(0.f, 0.f);
+    glm::vec3 s, u, v, a;
+    float t;
+    // an object has the following properties: u = 2i + 3j + 4k, a = 4i + 2j + 3k. Find v after 2 and 4 seconds.
+    u = glm::vec3(2.f, 3.f, 4.f);
+    a = glm::vec3(4.f, 2.f, 3.f);
+    t = 2.f;
+    v = Rock::calculateVelocity(u, a, t);
+    ASSERT_EQ(v, glm::vec3(10.f, 7.f, 10.f));
+    t = 4.f;
+    v = Rock::calculateVelocity(u, a, t);
+    ASSERT_EQ(v, glm::vec3(18.f, 11.f, 16.f));
+
+    // a cannonball is released from a cannon at ground level with an initial speed of 250m per second.
+    // it is fired at an angle of 30 degrees to the ground. find how far it travels horizontally from
+    // the firing point before it explodes if it is designed to explode 10m above the ground on descent.
+    // assume gravity is 10 m/s
+    s = glm::vec3(0.f, 10.f, 0.f);
+    u = glm::vec3(250.f * cos(30.f * 3.14159f / 180.f), 250.f * sin(30.f * 3.14159f / 180.f), 0.f);
+    a = glm::vec3(0.f, -10.f, 0.f);
+    std::tuple<float, float> times = Rock::calculateTime(u.y, a.y, s.y);
+    t = std::max(std::get<0>(times), std::get<1>(times));
+    v.x = 250 * cos(30 * 3.14159 / 180);
+    s.x = (u.x + v.x) / 2 * t;
+    ASSERT_EQ(floor(s.x), 5395);
+}
+
+TEST(PhysicsEngine, TestVector2)
+{
+    Rock::Vector2 v1(1.f, 1.f);
+    Rock::Vector2 v2(4.f, 2.f);
+    Rock::Vector2 result(0.f, 0.f);
 
     result = -v1;
-    ASSERT_EQ(result, Rock::Vector(-1.f, -1.f));
+    ASSERT_EQ(result, Rock::Vector2(-1.f, -1.f));
 
     result = v1 - v2;
-    ASSERT_EQ(result, Rock::Vector(-3.f, -1.f));
+    ASSERT_EQ(result, Rock::Vector2(-3.f, -1.f));
 
     result = v1 + v2;
-    ASSERT_EQ(result, Rock::Vector(5.f, 3.f));
+    ASSERT_EQ(result, Rock::Vector2(5.f, 3.f));
 
     result = v1 * v2;
-    ASSERT_EQ(result, Rock::Vector(4.f, 2.f));
+    ASSERT_EQ(result, Rock::Vector2(4.f, 2.f));
 
     float n = 5.f;
     result = v1 * n;
-    ASSERT_EQ(result, Rock::Vector(5.f, 5.f));
+    ASSERT_EQ(result, Rock::Vector2(5.f, 5.f));
 
     result = v1 / v2;
-    ASSERT_EQ(result, Rock::Vector(0.25f, 0.5f));
+    ASSERT_EQ(result, Rock::Vector2(0.25f, 0.5f));
 
     result = v1 / n;
-    ASSERT_EQ(result, Rock::Vector(0.2f, 0.2f));
+    ASSERT_EQ(result, Rock::Vector2(0.2f, 0.2f));
 
     ASSERT_TRUE(v1 == v1);
     ASSERT_FALSE(v1 == v2);
 
-    v1 = Rock::Vector(3.f, 4.f);
-    v2 = Rock::Vector(7.f, 7.f);
+    v1 = Rock::Vector2(3.f, 4.f);
+    v2 = Rock::Vector2(7.f, 7.f);
 
     ASSERT_EQ(v1.length(), 5.f);
-    ASSERT_EQ(v1.normalise(), Rock::Vector(0.6f, 0.8f, 0.f));
+    ASSERT_EQ(v1.normalise(), Rock::Vector2(0.6f, 0.8f));
     ASSERT_EQ(v1.distance(v2), 5.f);
     ASSERT_EQ(v1.dot(v2), 49.f);
-    ASSERT_EQ(v1.cross(v2), Rock::Vector(0.f, 0.f, -7.f));
 }
 
-TEST(PhysicsEngine, TestCollisions)
+TEST(PhysicsEngine, TestVector3)
 {
-    // test OBB/OBB collisions
-    Rock::OBBCollider obb1, obb2;
-    obb1 = Rock::OBBCollider(Rock::Transform(glm::vec3(5.1f, 2.6f, 0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(5.f, 10.f, 0.f)));
-    obb2 = Rock::OBBCollider(Rock::Transform(glm::vec3(15.f, 7.5f, 0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(10.f, 5.f, 0.f)));
-    ASSERT_FALSE(obbIntersectingOBB(obb1, obb2));
-    obb1 = Rock::OBBCollider(Rock::Transform(glm::vec3(5.1f, 2.6f, 0.f), glm::vec3(0.f, 0.f, 3.1415926f / 2.f), glm::vec3(5.f, 10.f, 0.f)));
-    obb2 = Rock::OBBCollider(Rock::Transform(glm::vec3(15.f, 7.5f, 0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(10.f, 5.f, 0.f)));
-    ASSERT_TRUE(obbIntersectingOBB(obb1, obb2));
-    obb1 = Rock::OBBCollider(Rock::Transform(glm::vec3(0.5f, 0.5f, 0.5f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)));
-    obb2 = Rock::OBBCollider(Rock::Transform(glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)));
-    ASSERT_TRUE(obbIntersectingOBB(obb1, obb2));
-    obb1 = Rock::OBBCollider(Rock::Transform(glm::vec3(1.f, 1.f, 1.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(2.f, 2.f, 2.f)));
-    obb2 = Rock::OBBCollider(Rock::Transform(glm::vec3(-1.1f, -1.f, -1.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(2.f, 2.f, 2.f)));
-    ASSERT_FALSE(obbIntersectingOBB(obb1, obb2));
+    Rock::Vector3 v1(3.f, 4.f, 0.f);
+    Rock::Vector3 v2(7.f, 7.f, 0.f);
+    
+    ASSERT_EQ(v1.length(), 5.f);
+    ASSERT_EQ(v1.normalise(), Rock::Vector3(0.6f, 0.8f, 0.f));
+    ASSERT_EQ(v1.distance(v2), 5.f);
+    ASSERT_EQ(v1.dot(v2), 49.f);
+    ASSERT_EQ(v1.cross(v2), Rock::Vector3(0.f, 0.f, -7.f));
+}
 
-    // test Sphere/Sphere collisions
-    Rock::SphereCollider sphere1, sphere2;
-    sphere1 = Rock::SphereCollider(Rock::Transform(glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)), 1.f);
-    sphere2 = Rock::SphereCollider(Rock::Transform(glm::vec3(1.f, 1.f, 1.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)), 1.f);
-    ASSERT_TRUE(sphereIntersectingSphere(sphere1, sphere2));
-    sphere1 = Rock::SphereCollider(Rock::Transform(glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)), 1.f);
-    sphere2 = Rock::SphereCollider(Rock::Transform(glm::vec3(2.f, 2.f, 2.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)), 1.f);
-    ASSERT_FALSE(sphereIntersectingSphere(sphere1, sphere2));
+TEST(PhysicsEngine, TestMatrix2)
+{
+    Rock::Matrix2 m1(3);
+    Rock::Matrix2 m2(3, 2, 1, 0);
 
-    // test OBB/Sphere collision
-    obb1 = Rock::OBBCollider(Rock::Transform(glm::vec3(0.0f, 0.f, 0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)));
-    sphere1 = Rock::SphereCollider(Rock::Transform(glm::vec3(0.78f, 0.78f, 0.78f), glm::vec3(0.f), glm::vec3(1.f)), 0.5f);
-    ASSERT_TRUE(obbIntersectingSphere(obb1, sphere1));
-    obb1 = Rock::OBBCollider(Rock::Transform(glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 1.f, 1.f)));
-    sphere1 = Rock::SphereCollider(Rock::Transform(glm::vec3(0.79f, 0.79f, 0.79f), glm::vec3(0.f), glm::vec3(1.f)), 0.5f);
-    ASSERT_FALSE(obbIntersectingSphere(obb1, sphere1));
+    m1 -= m2;
+
+    ASSERT_EQ(m1.getRow(0), Rock::Vector2(0, 1));
+    ASSERT_EQ(m1.getRow(1), Rock::Vector2(2, 3));
+    ASSERT_EQ(m1.getColumn(0), Rock::Vector2(0, 2));
+    ASSERT_EQ(m1.getColumn(1), Rock::Vector2(1, 3));
+
+    m1 = m1 * m2;
+
+    ASSERT_EQ(m1.getRow(0), Rock::Vector2(1, 0));
+    ASSERT_EQ(m1.getRow(1), Rock::Vector2(9, 4));
+
+    ASSERT_EQ(m1.getRow(0), m1.getTranspose().getColumn(0));
+    ASSERT_EQ(m1.getRow(1), m1.getTranspose().getColumn(1));
+}
+
+TEST(PhysicsEngine, TestMatrix3)
+{
+    Rock::Matrix3 m1(1);
+    Rock::Matrix3 m2, m1m2, m2m1;
+    m2 = Rock::Matrix3(1, 2, 3,
+                       2, 3, 4,
+                       3, 4, 5);
+
+    ASSERT_TRUE(m2 == m2.getTranspose());
+
+    m1m2 = Rock::Matrix3(6, 9, 12,
+                         6, 9, 12,
+                         6, 9, 12);
+    m2m1 = Rock::Matrix3(6, 6, 6,
+                         9, 9, 9,
+                         12,12,12);
+
+    ASSERT_TRUE(m1 * m2 == m1m2);
+    ASSERT_TRUE(m2 * m1 == m2m1);
+
+    ASSERT_EQ(m1.getDeterminant(), 0.f);
+}
+
+TEST(PhysicsEngine, TestTransformComponent)
+{
+    gameObject = m_entities.create();
+
+    auto& transformComp = m_entities.emplace<Rock::TransformComponent>(gameObject,
+        glm::vec3(0.f), glm::vec3(0.f), glm::vec3(1.f));
+    
+    ASSERT_EQ(transformComp.m_translation, glm::vec3(0.f));
+    ASSERT_EQ(transformComp.m_rotation, glm::quat(glm::vec3(0.f)));
+    ASSERT_EQ(transformComp.m_scale, glm::vec3(1.f));
+    
+    // test recalculate
+    glm::mat4 t = glm::translate(glm::mat4(1.f), transformComp.m_translation);
+    glm::mat4 r = glm::toMat4(transformComp.m_rotation);
+    glm::mat4 s = glm::scale(glm::mat4(1.f), transformComp.m_scale);
+    ASSERT_EQ(transformComp.m_transform, t * r * s);
+    
+    // change translation, rotation and scale
+    transformComp.m_translation += glm::vec3(100.f, 100.f, 0.f);
+    transformComp.m_rotation += glm::quat(glm::vec3(100.f, 100.f, 0.f));
+    transformComp.m_scale *= glm::vec3(2.f, 2.f, 2.f);
+    transformComp.recalculate();
+    
+    // test recalculate
+    t = glm::translate(glm::mat4(1.f), glm::vec3(100.f, 100.f, 0.f));
+    r = glm::toMat4(glm::quat(glm::vec3(0.f)) + glm::quat(glm::vec3(100.f, 100.f, 0.f)));
+    s = glm::scale(glm::mat4(1.f), glm::vec3(2.f, 2.f, 2.f));
+    ASSERT_EQ(transformComp.m_transform, t * r * s);
+}
+
+TEST(PhysicsEngine, TestColliderComponent)
+{
+    obb1 = m_entities.create();
+    obb2 = m_entities.create();
+    sphere2 = m_entities.create();
+    sphere2 = m_entities.create();
+    
+    for (entt::entity obb : {obb1, obb2})
+    {
+        auto& transformComp = m_entities.emplace<Rock::TransformComponent>(obb,
+            glm::vec3(0.f), glm::vec3(0.f), glm::vec3(1.f));
+        auto& collisionComp = m_entities.emplace<Rock::OBBComponent>(obb, glm::vec3(0.5f));
+    }
+
+    for (entt::entity sphere : {sphere1, sphere2})
+    {
+        auto& transformComp = m_entities.emplace<Rock::TransformComponent>(sphere,
+            glm::vec3(0.f), glm::vec3(0.f), glm::vec3(1.f));
+        auto& collisionComp = m_entities.emplace<Rock::SphereComponent>(sphere, 0.5f);
+    }
+
+    {
+        auto& transformComp = m_entities.get<Rock::TransformComponent>(obb2);
+        transformComp.m_translation = glm::vec3(1.f, 1.f, 1.f);
+        transformComp.recalculate();
+        ASSERT_TRUE(Rock::obbIntersectingOBB(m_entities, obb1, obb2));
+        transformComp.m_translation = glm::vec3(1.1f, 1.1f, 1.1f);
+        transformComp.recalculate();
+        ASSERT_FALSE(Rock::obbIntersectingOBB(m_entities, obb1, obb2));
+    }
+
+    {
+        auto& transformComp = m_entities.get<Rock::TransformComponent>(sphere2);
+        transformComp.m_translation = glm::vec3(0.57f, 0.57f, 0.57f);
+        transformComp.recalculate();
+        ASSERT_TRUE(Rock::sphereIntersectingSphere(m_entities, sphere1, sphere2));
+        transformComp.m_translation = glm::vec3(0.58f, 0.58f, 0.58f);
+        transformComp.recalculate();
+        ASSERT_FALSE(Rock::sphereIntersectingSphere(m_entities, sphere1, sphere2));
+    }
+
+    {
+        auto& transformComp = m_entities.get<Rock::TransformComponent>(sphere1);
+        transformComp.m_translation = glm::vec3(0.78f, 0.78f, 0.78f);
+        transformComp.recalculate();
+        ASSERT_TRUE(Rock::obbIntersectingSphere(m_entities, obb1, sphere1));
+        transformComp.m_translation = glm::vec3(0.79f, 0.79f, 0.79f);
+        transformComp.recalculate();
+        ASSERT_FALSE(Rock::obbIntersectingSphere(m_entities, obb1, sphere1));
+    }
+}
+
+TEST(PhysicsEngine, TestRigidbodyComponent)
+{
+    auto& rigidbodyComp = m_entities.emplace<Rock::RigidbodyComponent>(gameObject, 100.f);
+    
+    auto& transformComp = m_entities.get<Rock::TransformComponent>(gameObject);
+    ASSERT_EQ(transformComp.m_translation, glm::vec3(100.f, 100.f, 0.f));
+
+    rigidbodyComp.m_grounded = false;
+    for (int i = 0; i < 17; i++)
+    {
+        rigidbodyComp.update(1.f);
+        transformComp.m_translation += rigidbodyComp.m_velocity;
+        transformComp.recalculate();
+        ASSERT_GT(transformComp.m_translation.y, 0.f);
+    }
+
+    rigidbodyComp.update(1.f);
+    transformComp.m_translation += rigidbodyComp.m_velocity;
+    transformComp.recalculate();
+    ASSERT_LT(transformComp.m_translation.y, 0.f);
 }
 
 TEST(WindowTests, CreateWindow)
@@ -371,7 +531,6 @@ bool isDeviceSuitable(VkPhysicalDevice device)
 
     return indices.isComplete() && swapChainAdequate; // swapChainAdequate is false if extensionsSupported is false
 }
-
 
 TEST(DeviceTests, PickPhysicalDevice)
 {
