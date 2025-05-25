@@ -46,6 +46,9 @@
 #include "imgui/backends/imgui_impl_vulkan.h"
 #define IMGUI_ENABLE_FREETYPE  // higher quality font rendering
 
+// entt
+#include <entt/entt.hpp>
+
 #include "window/window.hpp"
 #include "window/eventSystem.hpp"
 #include "core/device.hpp"
