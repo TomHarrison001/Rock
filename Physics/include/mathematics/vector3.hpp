@@ -1,19 +1,16 @@
 #pragma once
 
-#include <string>
-#include <sstream>
-
 namespace Rock
 {
-	struct Vector
+	struct Vector3
 	{
 		float x;
 		float y;
 		float z;
 
-		Vector(float x, float y, float z) : x(x), y(y), z(z) { }
-		Vector(float x, float y) : Vector(x, y, 0.f) { }
-		Vector(float x) : Vector(x, 0.f, 0.f) { }
+		Vector3() = default;
+		Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
+		Vector3(float x) : Vector3(x, x, x) {}
 
 		std::string toString() const
 		{
@@ -22,50 +19,43 @@ namespace Rock
 			return ss.str();
 		}
 
-		Vector operator-() const
+		Vector3 operator-() const
 		{
 			return { this->x * -1.f, this->y * -1.f, this->z * -1.f };
 		};
 
-		Vector operator-(Vector& other) const
+		Vector3 operator-(Vector3& other) const
 		{
 			return { this->x - other.x, this->y - other.y, this->z - other.z };
 		};
 
-		void operator-=(Vector& other)
+		void operator-=(Vector3& other)
 		{
 			this->x -= other.x;
 			this->y -= other.y;
 			this->z -= other.z;
 		};
 
-		Vector operator+(Vector& other) const
+		Vector3 operator+(Vector3& other) const
 		{
 			return { this->x + other.x, this->y + other.y, this->z + other.z };
 		};
 
-		void operator+=(Vector& other)
+		void operator+=(Vector3& other)
 		{
 			this->x += other.x;
 			this->y += other.y;
 			this->z += other.z;
 		};
 
-		Vector operator*(Vector& other) const
-		{
-			return { this->x * other.x, this->y * other.y, this->z * other.z };
-		}
-
-		Vector operator*(float n) const
+		Vector3 operator*(float n) const
 		{
 			return { this->x * n, this->y * n, this->z * n };
 		}
 
-		void operator*=(Vector& other)
+		Vector3 operator*(Vector3& other) const
 		{
-			this->x *= other.x;
-			this->y *= other.y;
-			this->z *= other.z;
+			return { this->x * other.x, this->y * other.y, this->z * other.z };
 		}
 
 		void operator*=(float n)
@@ -75,27 +65,27 @@ namespace Rock
 			this->z *= n;
 		}
 
-		Vector operator/(Vector& other) const
+		void operator*=(Vector3& other)
 		{
-			return {
-				(other.x == 0.f) ? 0.f : this->x / other.x,
-				(other.y == 0.f) ? 0.f : this->y / other.y,
-				(other.z == 0.f) ? 0.f : this->z / other.z
-			};
+			this->x *= other.x;
+			this->y *= other.y;
+			this->z *= other.z;
 		}
 
-		Vector operator/(float n) const
+		Vector3 operator/(float n) const
 		{
 			if (n == 0)
 				return { 0.f };
 			return { this->x / n, this->y / n, this->z / n };
 		}
 
-		void operator/=(Vector& other)
+		Vector3 operator/(Vector3& other) const
 		{
-			this->x = (other.x == 0.f) ? 0.f : this->x / other.x;
-			this->y = (other.y == 0.f) ? 0.f : this->y / other.y;
-			this->z = (other.z == 0.f) ? 0.f : this->z / other.z;
+			return {
+				(other.x == 0.f) ? 0.f : this->x / other.x,
+				(other.y == 0.f) ? 0.f : this->y / other.y,
+				(other.z == 0.f) ? 0.f : this->z / other.z
+			};
 		}
 
 		void operator/=(float n)
@@ -105,7 +95,19 @@ namespace Rock
 			this->z = (n == 0.f) ? 0.f : this->z / n;
 		}
 
-		bool operator==(const Vector& other) const
+		void operator/=(Vector3& other)
+		{
+			this->x = (other.x == 0.f) ? 0.f : this->x / other.x;
+			this->y = (other.y == 0.f) ? 0.f : this->y / other.y;
+			this->z = (other.z == 0.f) ? 0.f : this->z / other.z;
+		}
+
+		float operator[](const uint32_t index) const
+		{
+			return (&x)[index];
+		}
+
+		bool operator==(const Vector3& other) const
 		{
 			return this->x == other.x && this->y == other.y && this->z == other.z;
 		}
@@ -115,23 +117,23 @@ namespace Rock
 			return sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
 		}
 
-		Vector normalise() const
+		Vector3 normalise() const
 		{
 			float len = this->length();
 			return { this->x / len, this->y / len, this->z / len };
 		}
 
-		float distance(Vector& v) const
+		float distance(Vector3& v) const
 		{
-			return Vector(this->x - v.x, this->y - v.y, this->z - v.z).length();
+			return Vector3(this->x - v.x, this->y - v.y, this->z - v.z).length();
 		}
 
-		float dot(Vector& v) const
+		float dot(Vector3& v) const
 		{
 			return this->x * v.x + this->y * v.y + this->z * v.z;
 		}
 
-		Vector cross(Vector& v) const
+		Vector3 cross(Vector3& v) const
 		{
 			return {
 				this->y * v.z - this->z * v.y,
@@ -140,7 +142,7 @@ namespace Rock
 			};
 		}
 
-		void clamp(Vector& min, Vector& max)
+		void clamp(Vector3& min, Vector3& max)
 		{
 			this->x = Rock::clamp(this->x, min.x, max.x);
 			this->y = Rock::clamp(this->y, min.y, max.y);
@@ -149,7 +151,7 @@ namespace Rock
 
 		void clamp(float min, float max)
 		{
-			this->clamp(Vector(min, min, min), Vector(max, max, max));
+			this->clamp(Vector3(min), Vector3(max));
 		}
 
 		void clamp(int min, int max)
@@ -157,4 +159,16 @@ namespace Rock
 			this->clamp(static_cast<float>(min), static_cast<float>(max));
 		}
 	};
+
+	// a x b = n • |a||b| sin x
+	static bool areParallel(const Vector3& v1, Vector3& v2)
+	{
+		return v1.cross(v2).length() < 0.0001f;
+	}
+
+	// a • b = |a||b| cos x
+	static bool areOrthogonal(const Vector3& v1, Vector3& v2)
+	{
+		return abs(v1.dot(v2)) < 0.0001f;
+	}
 }

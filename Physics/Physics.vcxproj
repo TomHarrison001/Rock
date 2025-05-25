@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -129,10 +129,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\collision.hpp" />
-    <ClInclude Include="include\math.hpp" />
-    <ClInclude Include="include\transform.hpp" />
-    <ClInclude Include="include\vector.hpp" />
+    <ClInclude Include="include\components\colliderComponent.hpp" />
+    <ClInclude Include="include\components\rigidbodyComponent.hpp" />
+    <ClInclude Include="include\components\transformComponent.hpp" />
+    <ClInclude Include="include\mathematics\mathematics.hpp" />
+    <ClInclude Include="include\mathematics\matrix2.hpp" />
+    <ClInclude Include="include\mathematics\matrix3.hpp" />
+    <ClInclude Include="include\mathematics\vector2.hpp" />
+    <ClInclude Include="include\mathematics\vector3.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />

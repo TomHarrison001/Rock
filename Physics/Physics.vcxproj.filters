@@ -13,19 +13,37 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\mathematics">
+      <UniqueIdentifier>{6f9328dd-420b-4ab6-b805-8208b696d0fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\components">
+      <UniqueIdentifier>{c035d335-eb91-4bf7-8911-6d085ff265bf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\math.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\components\transformComponent.hpp">
+      <Filter>Header Files\components</Filter>
     </ClInclude>
-    <ClInclude Include="include\vector.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\components\rigidbodyComponent.hpp">
+      <Filter>Header Files\components</Filter>
     </ClInclude>
-    <ClInclude Include="include\collision.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\mathematics\mathematics.hpp">
+      <Filter>Header Files\mathematics</Filter>
     </ClInclude>
-    <ClInclude Include="include\transform.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\mathematics\matrix2.hpp">
+      <Filter>Header Files\mathematics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\mathematics\matrix3.hpp">
+      <Filter>Header Files\mathematics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\mathematics\vector2.hpp">
+      <Filter>Header Files\mathematics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\mathematics\vector3.hpp">
+      <Filter>Header Files\mathematics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\components\colliderComponent.hpp">
+      <Filter>Header Files\components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
