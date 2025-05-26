@@ -4,6 +4,7 @@
 
 #include <chrono>
 
+#include "window/ui.hpp"
 #include "core/application.hpp"
 
 class ModelApp : public Application
@@ -19,6 +20,7 @@ private:
     };
 
     void initApplication() override;
+    void initImgui();
     void mainLoop() override;
     void cleanup() override;
     void createDescriptorSetLayout();

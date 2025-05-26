@@ -5,6 +5,12 @@
 #include "rendering/swapchain.hpp"
 #include "rendering/pipeline.hpp"
 
+#include "imgui/imgui.h"
+#include "imgui/backends/imgui_impl_glfw.h"
+#include "imgui/backends/imgui_impl_vulkan.h"
+#define IMGUI_ENABLE_FREETYPE  // higher quality font rendering
+#include "imgui/imgui_internal.h"
+
 /* \class Renderer
 *  \brief creates, records, submits and frees command buffers, maintains the swapchain during its lifecycle
 */

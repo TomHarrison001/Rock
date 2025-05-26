@@ -26,6 +26,34 @@ void ModelApp::initApplication()
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
+
+    initImgui();
+}
+
+void ModelApp::initImgui()
+{
+    ImGui::CreateContext();
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+    ImGui_ImplGlfw_InitForVulkan(m_device->getWindow()->getWindow(), true);
+    ImGui_ImplVulkan_InitInfo info{};
+    info.DescriptorPool = m_descriptorManager->getDescriptorPool();
+    info.RenderPass = m_renderer->getSwapchainRenderPass();
+    info.Device = m_device->getDevice();
+    info.PhysicalDevice = m_device->getPhysicalDevice();
+    info.MinImageCount = Swapchain::MAX_FRAMES_IN_FLIGHT;
+    info.ImageCount = Swapchain::MAX_FRAMES_IN_FLIGHT;
+    info.MSAASamples = m_msaaSamples;
+    info.Instance = m_device->getInstance();
+    info.Queue = m_device->getGraphicsQueue();
+    ImGui_ImplVulkan_Init(&info);
+
+    //VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+    //ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
+    //endSingleTimeCommands(commandBuffer);
+
+    vkDeviceWaitIdle(m_device->getDevice());
+    //ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
 void ModelApp::mainLoop()
@@ -47,6 +75,10 @@ void ModelApp::mainLoop()
 
 void ModelApp::cleanup()
 {
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
     m_graphicsPipeline->destroyPipelineLayout();
     vkDestroySampler(m_device->getDevice(), m_textureSampler, nullptr);
     vkDestroyImageView(m_device->getDevice(), m_textureImageView, nullptr);
@@ -76,9 +108,9 @@ void ModelApp::drawFrame()
     vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getFence(), VK_TRUE, UINT64_MAX);
     m_renderer->beginFrame();
     updateUniformBuffer(m_renderer->getCurrentFrame());
-    vkResetFences(m_device->getDevice(), 1, &m_renderer->getFence());
-    vkResetCommandBuffer(m_renderer->getCommandBuffer(), 0);
     m_renderer->recordCommandBuffer(m_graphicsPipeline, m_vertexBuffer, m_indexBuffer, m_descriptorManager->getDescriptorSets(), m_indices);
+    vkResetFences(m_device->getDevice(), 1, &m_renderer->getFence());
+    //vkResetCommandBuffer(m_renderer->getCommandBuffer(), 0);
     m_renderer->submitCommandBuffer();
 
     m_renderer->endFrame();
@@ -289,7 +321,7 @@ void ModelApp::createUniformBuffers()
 void ModelApp::createDescriptorPool()
 {
     m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
-    m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
+    m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT * 2));
     m_descriptorManager->buildDescriptorPool();
 }
 
