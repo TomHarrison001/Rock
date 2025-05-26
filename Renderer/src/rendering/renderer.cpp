@@ -270,14 +270,30 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, Vk
     ImGui::SetNextItemOpen(true, ImGuiCond_Once);
     if (ImGui::TreeNode("Scene"))
     {
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 1; i++)
         {
             ImGui::PushID(i);
+            ImGui::SetNextItemOpen(true, ImGuiCond_Once);
             if (ImGui::TreeNode("", "GameObject %d", i + 1))
             {
-                ImGui::Text("Transform");
-                ImGui::SameLine();
-                if (ImGui::SmallButton("Edit")) {}
+                ImGui::PushID(i * 100 + 1);
+                if (ImGui::TreeNode("", "Transform"))
+                {
+                   ImGui::TreePop();
+                }
+                ImGui::PopID();
+                ImGui::PushID(i * 100 + 2);
+                if (ImGui::TreeNode("", "Collider"))
+                {
+                   ImGui::TreePop();
+                }
+                ImGui::PopID();
+                ImGui::PushID(i * 100 + 3);
+                if (ImGui::TreeNode("", "Rigidbody"))
+                {
+                   ImGui::TreePop();
+                }
+                ImGui::PopID();
                 ImGui::TreePop();
             }
             ImGui::PopID();
@@ -307,9 +323,27 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, Vk
 
     ImGui::Begin("Properties");
     ImGui::Text("GameObject 1");
+    ImGui::Separator();
+    ImGui::Text("Transform:");
     ImGui::DragFloat3("Translation", m_translation, 0.01f, -5.f, 5.f);
     ImGui::DragFloat3("Rotation", m_rotation, 0.01f, -45.f, 45.f);
     ImGui::DragFloat3("Scale", m_scale, 0.01f, 0.f, 1.f);
+    ImGui::Separator();
+    ImGui::Text("Collider:");
+    static float halfExtents[3]{ 0.5f, 0.5f, 0.5f };
+    ImGui::DragFloat3("Half Extents", halfExtents, 0.01f, 0.01f, 5.f);
+    ImGui::Separator();
+    ImGui::Text("Rigidbody:");
+    static float velocity[3]{ 0.0f, 0.0f, 0.0f };
+    ImGui::DragFloat3("Velocity", velocity, 0.1f, -100.f, 100.f);
+    static float acceleration[3]{ 0.0f, 0.0f, 0.0f };
+    ImGui::DragFloat3("Acceleration", acceleration, 0.1f, -100.f, 100.f);
+    static float mass = 50.f;
+    ImGui::DragFloat("Mass", &mass, 0.01f, 0.01f, 200.f);
+    static bool gravity = true;
+    ImGui::Checkbox("Gravity", &gravity);
+    static bool grounded = true;
+    ImGui::Checkbox("Grounded", &grounded);
     ImGui::End();
 
     ImGui::Render();
