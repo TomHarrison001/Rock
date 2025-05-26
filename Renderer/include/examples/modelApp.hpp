@@ -4,74 +4,7 @@
 
 #include <chrono>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/hash.hpp>
-
 #include "core/application.hpp"
-
-/* \struct Vertex
-*  \brief stores the data sent to the SSBO for each vertex: position, tex coord and colour; also handles binding and attribute descriptions
-*/
-struct Vertex
-{
-    glm::vec3 pos;
-    glm::vec3 colour;
-    glm::vec2 texCoord;
-
-    static VkVertexInputBindingDescription getBindingDescription()
-    {
-        VkVertexInputBindingDescription bindingDescription{};
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(Vertex);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-        return bindingDescription;
-    }
-
-    static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions()
-    {
-        std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-
-        VkVertexInputAttributeDescription posAttrib{};
-        posAttrib.binding = 0;
-        posAttrib.location = 0;
-        posAttrib.format = VK_FORMAT_R32G32B32_SFLOAT;
-        posAttrib.offset = offsetof(Vertex, pos);
-        attributeDescriptions.push_back(posAttrib);
-
-        VkVertexInputAttributeDescription colAttrib{};
-        colAttrib.binding = 0;
-        colAttrib.location = 1;
-        colAttrib.format = VK_FORMAT_R32G32B32_SFLOAT;
-        colAttrib.offset = offsetof(Vertex, colour);
-        attributeDescriptions.push_back(colAttrib);
-
-        VkVertexInputAttributeDescription texCoordAttrib{};
-        texCoordAttrib.binding = 0;
-        texCoordAttrib.location = 2;
-        texCoordAttrib.format = VK_FORMAT_R32G32_SFLOAT;
-        texCoordAttrib.offset = offsetof(Vertex, texCoord);
-        attributeDescriptions.push_back(texCoordAttrib);
-
-        return attributeDescriptions;
-    }
-
-    bool operator==(const Vertex& other) const
-    {
-        return pos == other.pos && colour == other.colour && texCoord == other.texCoord;
-    }
-};
-
-namespace std {
-    template<> struct hash<Vertex> {
-        size_t operator()(Vertex const& vertex) const {
-            return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.colour) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
-        }
-    };
-}
 
 class ModelApp : public Application
 {

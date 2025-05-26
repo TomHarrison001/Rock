@@ -16,16 +16,15 @@ void EngineApp::initApplication()
     WindowSettings settings = WindowSettings();
     settings.width = 1280;
     settings.height = 720;
-    //settings.resizable = false;
+    settings.aspectRatio = 1280.f / 720.f;
     settings.imguiEnabled = true;
     Window* window = new Window(settings);
     m_device = new Device(window);
     window = nullptr;
     m_descriptorManager = new DescriptorManager(m_device, Swapchain::MAX_FRAMES_IN_FLIGHT);
-    
-    createDescriptorPool();
-
     m_renderer = new Renderer(m_device);
+
+    createDescriptorPool();
 
     initialiseImgui();
 }
@@ -103,6 +102,7 @@ void EngineApp::drawFrame()
     ImGui::Text("#include <iostream>");
     ImGui::Text("");
     ImGui::Text("int main(int argc, char* argv[])");
+    ImGui::Text("{");
     ImGui::Text("    return 0;");
     ImGui::Text("}");
     ImGui::Text("");
@@ -199,7 +199,7 @@ void EngineApp::drawFrame()
 
     // present main platform window
     if (!minimised)
-        framePresent();
+        m_renderer->endFrame();
 }
 
 void EngineApp::createDescriptorPool()
@@ -220,7 +220,7 @@ void EngineApp::initialiseImgui()
     io.ConfigDockingWithShift = false; // hold shift to disable docking instead of hold shift to enable docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // enable multi-viewport / platform windows
     
-    ImGui::StyleColorsLight();
+    ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
