@@ -78,9 +78,6 @@
     <ClCompile Include="src\examples\computeApp.cpp">
       <Filter>Source Files\examples</Filter>
     </ClCompile>
-    <ClCompile Include="src\examples\modelApp.cpp">
-      <Filter>Source Files\examples</Filter>
-    </ClCompile>
     <ClCompile Include="src\examples\engineApp.cpp">
       <Filter>Source Files\examples</Filter>
     </ClCompile>
@@ -132,9 +129,6 @@
       <Filter>Header Files\window</Filter>
     </ClInclude>
     <ClInclude Include="include\examples\computeApp.hpp">
-      <Filter>Header Files\examples</Filter>
-    </ClInclude>
-    <ClInclude Include="include\examples\modelApp.hpp">
       <Filter>Header Files\examples</Filter>
     </ClInclude>
     <ClInclude Include="include\examples\engineApp.hpp">

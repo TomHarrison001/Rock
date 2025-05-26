@@ -155,7 +155,6 @@
     <ClCompile Include="src\core\device.cpp" />
     <ClCompile Include="src\examples\computeApp.cpp" />
     <ClCompile Include="src\examples\engineApp.cpp" />
-    <ClCompile Include="src\examples\modelApp.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\rendering\pipeline.cpp" />
     <ClCompile Include="src\rendering\renderer.cpp" />
@@ -177,7 +176,6 @@
     <ClInclude Include="include\core\device.hpp" />
     <ClInclude Include="include\examples\computeApp.hpp" />
     <ClInclude Include="include\examples\engineApp.hpp" />
-    <ClInclude Include="include\examples\modelApp.hpp" />
     <ClInclude Include="include\rendering\pipeline.hpp" />
     <ClInclude Include="include\rendering\renderer.hpp" />
     <ClInclude Include="include\rendering\swapchain.hpp" />

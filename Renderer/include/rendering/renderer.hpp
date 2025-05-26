@@ -4,12 +4,7 @@
 
 #include "rendering/swapchain.hpp"
 #include "rendering/pipeline.hpp"
-
-#include "imgui/imgui.h"
-#include "imgui/backends/imgui_impl_glfw.h"
-#include "imgui/backends/imgui_impl_vulkan.h"
-#define IMGUI_ENABLE_FREETYPE  // higher quality font rendering
-#include "imgui/imgui_internal.h"
+#include "window/ui.hpp"
 
 /* \class Renderer
 *  \brief creates, records, submits and frees command buffers, maintains the swapchain during its lifecycle
@@ -44,7 +39,7 @@ public:
 	void beginSwapchainRenderPass(Pipeline* pipeline, VkCommandBuffer commandBuffer, bool depth = false); //!< sets the render pass info before beginning the pass
 	void beginSwapchainRenderPass(VkClearValue& clearColour); //!< sets the render pass info before beginning the pass
 	void recordCommandBuffer(bool compute, Pipeline* pipeline, const uint32_t m_particleCount = 0, std::vector<VkBuffer> shaderStorageBuffers = {}, std::vector<VkDescriptorSet> descriptorSets = {}); //!< begins the current command buffer, binds the relevant pipeline, calls vkDraw or vkDispatch and ends the command buffer
-	void recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer, std::vector<VkDescriptorSet> descriptorSets, std::vector<uint32_t> indices); //!< begins the current command buffer, binds the relevant pipeline, calls vkDraw or vkDispatch and ends the command buffer
+	void recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer, std::vector<VkDescriptorSet> descriptorSets, std::vector<uint32_t> indices, float* m_translation, float* m_rotation, float* m_scale); //!< begins the current command buffer, binds the relevant pipeline, calls vkDraw or vkDispatch and ends the command buffer
 	void submitCommandBuffer(bool compute); //!< submits the current command buffer to a device queue
 	void submitCommandBuffer(); //!< submits the current command buffer to a device queue
 private:

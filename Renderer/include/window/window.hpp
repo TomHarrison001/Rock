@@ -14,8 +14,8 @@
 struct WindowSettings
 {
 	const char* title{ "Rock" }; //!< title on menu bar
-	uint32_t width{ 720 }; //!< width in pixels
-	uint32_t height{ 480 }; //!< height in pixels
+	uint32_t width{ 1280 }; //!< width in pixels
+	uint32_t height{ 720 }; //!< height in pixels
 	float aspectRatio{ static_cast<float>(width) / static_cast<float>(height) }; //!< window aspect ratio
 	bool fullscreen{ false }; //!< is window fullscreen
 	bool resizable{ true }; //!< can window be resized

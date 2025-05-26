@@ -188,7 +188,8 @@ void Renderer::recordCommandBuffer(bool compute, Pipeline* pipeline, const uint3
         throw std::runtime_error("Failed to record render command buffer.");
 }
 
-void Renderer::recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer, std::vector<VkDescriptorSet> descriptorSets, std::vector<uint32_t> indices)
+void Renderer::recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer, std::vector<VkDescriptorSet> descriptorSets, std::vector<uint32_t> indices,
+    float* m_translation, float* m_rotation, float* m_scale)
 {
     VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
 
@@ -212,8 +213,104 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, Vk
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    const ImVec4 bgColour = ImVec4(0.1f, 0.1f, 0.1f, 0.f);
+    const ImVec4 editorColour = ImVec4(0.1f, 0.1f, 0.1f, 0.5f);
+    ImVec4* colours = ImGui::GetStyle().Colors;
+    colours[ImGuiCol_WindowBg] = bgColour;
 
-    ImGui::ShowDemoWindow();
+    /****************************
+    *     MainMenuBar           *
+    ****************************/
+
+    createMainMenuBar(m_device);
+
+    /****************************
+    *     FpsCounter            *
+    ****************************/
+
+    createOverlay(io.Framerate);
+
+    /****************************
+    *     Dockspace             *
+    ****************************/
+
+    ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
+
+    /****************************
+    *     Viewport              *
+    ****************************/
+
+    ImGui::Begin("Viewport");
+    ImGui::End();
+
+    /****************************
+    *     Editor                *
+    ****************************/
+
+    colours[ImGuiCol_WindowBg] = editorColour;
+    ImGui::Begin("Editor");
+    ImGui::Text("main.cpp");
+    ImGui::Text("");
+    ImGui::Text("#include <iostream>");
+    ImGui::Text("");
+    ImGui::Text("int main(int argc, char* argv[])");
+    ImGui::Text("{");
+    ImGui::Text("    return 0;");
+    ImGui::Text("}");
+    ImGui::Text("");
+    ImGui::End();
+    colours[ImGuiCol_WindowBg] = bgColour;
+
+    /****************************
+    *     Scene hierarchy       *
+    ****************************/
+
+    ImGui::Begin("Scene");
+    ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+    if (ImGui::TreeNode("Scene"))
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            ImGui::PushID(i);
+            if (ImGui::TreeNode("", "GameObject %d", i + 1))
+            {
+                ImGui::Text("Transform");
+                ImGui::SameLine();
+                if (ImGui::SmallButton("Edit")) {}
+                ImGui::TreePop();
+            }
+            ImGui::PopID();
+        }
+        ImGui::TreePop();
+    }
+    ImGui::End();
+
+    /****************************
+    *     File manager          *
+    ****************************/
+
+    ImGui::Begin("File Manager");
+    ImGui::Text("File manager");
+    ImGui::End();
+
+    /****************************
+    *     Console               *
+    ****************************/
+
+    static Console console;
+    console.draw("Console");
+
+    /****************************
+    *     Properties            *
+    ****************************/
+
+    ImGui::Begin("Properties");
+    ImGui::Text("GameObject 1");
+    ImGui::DragFloat3("Translation", m_translation, 0.01f, -5.f, 5.f);
+    ImGui::DragFloat3("Rotation", m_rotation, 0.01f, -45.f, 45.f);
+    ImGui::DragFloat3("Scale", m_scale, 0.01f, 0.f, 1.f);
+    ImGui::End();
 
     ImGui::Render();
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
