@@ -326,8 +326,8 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, Vk
     ImGui::Separator();
     ImGui::Text("Transform:");
     ImGui::DragFloat3("Translation", m_translation, 0.01f, -5.f, 5.f);
-    ImGui::DragFloat3("Rotation", m_rotation, 0.01f, -45.f, 45.f);
-    ImGui::DragFloat3("Scale", m_scale, 0.01f, 0.f, 1.f);
+    ImGui::DragFloat3("Rotation", m_rotation, 0.1f, -180.f, 180.f);
+    ImGui::DragFloat3("Scale", m_scale, 0.01f, 0.f, 5.f);
     ImGui::Separator();
     ImGui::Text("Collider:");
     static float halfExtents[3]{ 0.5f, 0.5f, 0.5f };
