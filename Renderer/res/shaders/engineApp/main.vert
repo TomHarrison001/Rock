@@ -1,9 +1,8 @@
 #version 460
 
 layout(location = 0) in vec3 position;
-layout(location = 1) in vec3 colour;
-layout(location = 2) in vec2 texCoord;
-layout(location = 3) in vec3 normal;
+layout(location = 1) in vec2 texCoord;
+layout(location = 2) in vec3 normal;
 
 layout(binding = 0) uniform CameraUBO {
     mat4 model;
@@ -14,7 +13,6 @@ layout(binding = 0) uniform CameraUBO {
 layout(location = 0) out vec3 fragmentPos;
 layout(location = 1) out vec3 vertexNormal;
 layout(location = 2) out vec2 v_texCoord;
-layout(location = 3) out vec3 vertexColour;
 
 void main()
 {

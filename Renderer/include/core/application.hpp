@@ -58,7 +58,6 @@ struct Particle
 struct Vertex
 {
     glm::vec3 pos;
-    glm::vec3 colour;
     glm::vec2 texCoord;
     glm::vec3 norm;
 
@@ -83,23 +82,16 @@ struct Vertex
         posAttrib.offset = offsetof(Vertex, pos);
         attributeDescriptions.push_back(posAttrib);
 
-        VkVertexInputAttributeDescription colAttrib{};
-        colAttrib.binding = 0;
-        colAttrib.location = 1;
-        colAttrib.format = VK_FORMAT_R32G32B32_SFLOAT;
-        colAttrib.offset = offsetof(Vertex, colour);
-        attributeDescriptions.push_back(colAttrib);
-
         VkVertexInputAttributeDescription texCoordAttrib{};
         texCoordAttrib.binding = 0;
-        texCoordAttrib.location = 2;
+        texCoordAttrib.location = 1;
         texCoordAttrib.format = VK_FORMAT_R32G32_SFLOAT;
         texCoordAttrib.offset = offsetof(Vertex, texCoord);
         attributeDescriptions.push_back(texCoordAttrib);
 
         VkVertexInputAttributeDescription normAttrib{};
         normAttrib.binding = 0;
-        normAttrib.location = 3;
+        normAttrib.location = 2;
         normAttrib.format = VK_FORMAT_R32G32B32_SFLOAT;
         normAttrib.offset = offsetof(Vertex, norm);
         attributeDescriptions.push_back(normAttrib);
@@ -109,14 +101,14 @@ struct Vertex
 
     bool operator==(const Vertex& other) const
     {
-        return pos == other.pos && colour == other.colour && texCoord == other.texCoord && norm == other.norm;
+        return pos == other.pos && texCoord == other.texCoord && norm == other.norm;
     }
 };
 
 namespace std {
     template<> struct hash<Vertex> {
         size_t operator()(Vertex const& vertex) const {
-            return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.colour) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
+            return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.norm) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
         }
     };
 }

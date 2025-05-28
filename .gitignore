@@ -13,3 +13,6 @@ x86/
 
 # imgui configuration file
 imgui.ini
+
+# doxygen documentation
+html/

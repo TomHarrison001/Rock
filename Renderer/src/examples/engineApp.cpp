@@ -254,7 +254,6 @@ void EngineApp::loadModel()
                 1.f - attrib.texcoords[2 * index.texcoord_index + 1]
             };
 
-            vertex.colour = { 1.f, 1.f, 1.f };
             if (uniqueVertices.count(vertex) == 0)
             {
                 uniqueVertices[vertex] = static_cast<uint32_t>(m_vertices.size());
