@@ -78,12 +78,6 @@
     <ClCompile Include="src\window\window.cpp">
       <Filter>Source Files\window</Filter>
     </ClCompile>
-    <ClCompile Include="src\examples\computeApp.cpp">
-      <Filter>Source Files\examples</Filter>
-    </ClCompile>
-    <ClCompile Include="src\examples\engineApp.cpp">
-      <Filter>Source Files\examples</Filter>
-    </ClCompile>
     <ClCompile Include="..\Dependencies\imgui\imgui.cpp">
       <Filter>Source Files\imgui</Filter>
     </ClCompile>
@@ -106,6 +100,12 @@
       <Filter>Source Files\imgui</Filter>
     </ClCompile>
     <ClCompile Include="src\examples\gameApp.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="src\examples\computeApp.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="src\examples\engineApp.cpp">
       <Filter>Source Files\examples</Filter>
     </ClCompile>
   </ItemGroup>
@@ -133,12 +133,6 @@
     </ClInclude>
     <ClInclude Include="include\window\window.hpp">
       <Filter>Header Files\window</Filter>
-    </ClInclude>
-    <ClInclude Include="include\examples\computeApp.hpp">
-      <Filter>Header Files\examples</Filter>
-    </ClInclude>
-    <ClInclude Include="include\examples\engineApp.hpp">
-      <Filter>Header Files\examples</Filter>
     </ClInclude>
     <ClInclude Include="include\window\ui.hpp">
       <Filter>Header Files\window</Filter>
@@ -172,6 +166,15 @@
     </ClInclude>
     <ClInclude Include="include\examples\gameApp.hpp">
       <Filter>Header Files\examples</Filter>
+    </ClInclude>
+    <ClInclude Include="include\examples\computeApp.hpp">
+      <Filter>Header Files\examples</Filter>
+    </ClInclude>
+    <ClInclude Include="include\examples\engineApp.hpp">
+      <Filter>Header Files\examples</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\renderComponent.hpp">
+      <Filter>Header Files\rendering</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

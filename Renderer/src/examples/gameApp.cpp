@@ -20,12 +20,14 @@ void GameApp::initApplication()
     createTextureImage();
     createTextureImageView();
     createTextureSampler();
-    loadModel("./res/models/cube.obj", m_cubeVertices, m_cubeIndices);
-    loadModel("./res/models/cube.obj", m_cubeVertices2, m_cubeIndices2);
-    createVertexBuffer(m_cubeVertices, m_cubeVertexBuffer, m_cubeVertexBufferMemory);
-    createVertexBuffer(m_cubeVertices2, m_cubeVertexBuffer2, m_cubeVertexBufferMemory2);
-    createIndexBuffer(m_cubeIndices, m_cubeIndexBuffer, m_cubeIndexBufferMemory);
-    createIndexBuffer(m_cubeIndices2, m_cubeIndexBuffer2, m_cubeIndexBufferMemory2);
+    m_cube1 = m_registry.create();
+    m_registry.emplace<Rock::TransformComponent>(m_cube1, glm::vec3(-2.f, 0.f, 0.f), glm::vec3(0.f), glm::vec3(1.f));
+    m_registry.emplace<Rock::RenderComponent>(m_cube1);
+    loadModel(m_cube1, "./res/models/cube.obj");
+    m_cube2 = m_registry.create();
+    m_registry.emplace<Rock::TransformComponent>(m_cube2, glm::vec3(0.f), glm::vec3(0.f), glm::vec3(1.f));
+    m_registry.emplace<Rock::RenderComponent>(m_cube2);
+    loadModel(m_cube2, "./res/models/cube.obj");
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
@@ -44,16 +46,22 @@ void GameApp::mainLoop()
             m_device->closeWindow();
         }
 
+        auto& transformComp = m_registry.get<Rock::TransformComponent>(m_cube1);
+
         if (m_device->isKeyPressed(GLFW_KEY_A) || m_device->isKeyPressed(GLFW_KEY_LEFT))
         {
-            m_position -= 0.01f;
-            m_position = std::clamp(m_position, -2.f, 2.f);
+            float z = transformComp.m_translation.z;
+            z = std::clamp(z - 0.01f, -2.f, 2.f);
+            transformComp.m_translation = glm::vec3(transformComp.m_translation.x, transformComp.m_translation.y, z);
+            transformComp.recalculate();
         }
 
         if (m_device->isKeyPressed(GLFW_KEY_D) || m_device->isKeyPressed(GLFW_KEY_RIGHT))
         {
-            m_position += 0.01f;
-            m_position = std::clamp(m_position, -2.f, 2.f);
+            float z = transformComp.m_translation.z;
+            z = std::clamp(z + 0.01f, -2.f, 2.f);
+            transformComp.m_translation = glm::vec3(transformComp.m_translation.x, transformComp.m_translation.y, z);
+            transformComp.recalculate();
         }
     }
 
@@ -67,14 +75,14 @@ void GameApp::cleanup()
     vkDestroyImageView(m_device->getDevice(), m_textureImageView, nullptr);
     vkDestroyImage(m_device->getDevice(), m_textureImage, nullptr);
     vkFreeMemory(m_device->getDevice(), m_textureImageMemory, nullptr);
-    vkDestroyBuffer(m_device->getDevice(), m_cubeVertexBuffer, nullptr);
-    vkDestroyBuffer(m_device->getDevice(), m_cubeVertexBuffer2, nullptr);
-    vkDestroyBuffer(m_device->getDevice(), m_cubeIndexBuffer, nullptr);
-    vkDestroyBuffer(m_device->getDevice(), m_cubeIndexBuffer2, nullptr);
-    vkFreeMemory(m_device->getDevice(), m_cubeVertexBufferMemory, nullptr);
-    vkFreeMemory(m_device->getDevice(), m_cubeVertexBufferMemory2, nullptr);
-    vkFreeMemory(m_device->getDevice(), m_cubeIndexBufferMemory, nullptr);
-    vkFreeMemory(m_device->getDevice(), m_cubeIndexBufferMemory2, nullptr);
+    for (entt::entity entity : { m_cube1, m_cube2 })
+    {
+        auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
+        vkDestroyBuffer(m_device->getDevice(), renderComp.m_vertexBuffer, nullptr);
+        vkDestroyBuffer(m_device->getDevice(), renderComp.m_indexBuffer, nullptr);
+        vkFreeMemory(m_device->getDevice(), renderComp.m_vertexBufferMemory, nullptr);
+        vkFreeMemory(m_device->getDevice(), renderComp.m_indexBufferMemory, nullptr);
+    }
     for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
     {
         vkDestroyBuffer(m_device->getDevice(), m_cameraBuffers[i], nullptr);
@@ -101,10 +109,8 @@ void GameApp::drawFrame()
     updateUniformBuffer(m_renderer->getCurrentFrame());
     vkResetFences(m_device->getDevice(), 1, &m_renderer->getFence());
     vkResetCommandBuffer(m_renderer->getCommandBuffer(), 0);
-    std::vector<VkBuffer> vertexBuffers{ m_cubeVertexBuffer, m_cubeVertexBuffer2 };
-    std::vector<VkBuffer> indexBuffers{ m_cubeIndexBuffer, m_cubeIndexBuffer2 };
-    std::vector<std::vector<uint32_t>> indices{ m_cubeIndices, m_cubeIndices2 };
-    m_renderer->recordCommandBuffer(m_graphicsPipeline, vertexBuffers, indexBuffers, m_descriptorManager->getDescriptorSets(), indices);
+    std::vector<entt::entity> entities = { m_cube1, m_cube2 };
+    m_renderer->recordCommandBuffer(m_graphicsPipeline, m_registry, entities, m_descriptorManager->getDescriptorSets());
     m_renderer->submitCommandBuffer();
 
     m_renderer->endFrame();
@@ -220,7 +226,7 @@ void GameApp::createTextureSampler()
         throw std::runtime_error("Failed to create texture sampler.");
 }
 
-void GameApp::loadModel(const char* path, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices)
+void GameApp::loadModel(entt::entity entity, const char* path)
 {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -231,6 +237,8 @@ void GameApp::loadModel(const char* path, std::vector<Vertex>& vertices, std::ve
         throw std::runtime_error(warn + err);
 
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
 
     for (const auto& shape : shapes)
     {
@@ -264,11 +272,19 @@ void GameApp::loadModel(const char* path, std::vector<Vertex>& vertices, std::ve
             indices.push_back(uniqueVertices[vertex]);
         }
     }
+
+    auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
+    renderComp.m_vertices = vertices;
+    renderComp.m_indices = indices;
+
+    createVertexBuffer(entity);
+    createIndexBuffer(entity);
 }
 
-void GameApp::createVertexBuffer(std::vector<Vertex>& vertices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory)
+void GameApp::createVertexBuffer(entt::entity entity)
 {
-    VkDeviceSize bufferSize = sizeof(Vertex) * vertices.size();
+    auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
+    VkDeviceSize bufferSize = sizeof(Vertex) * renderComp.m_vertices.size();
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -276,20 +292,21 @@ void GameApp::createVertexBuffer(std::vector<Vertex>& vertices, VkBuffer& vertex
 
     void* data;
     vkMapMemory(m_device->getDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, vertices.data(), (size_t)bufferSize);
+    memcpy(data, renderComp.m_vertices.data(), (size_t)bufferSize);
     vkUnmapMemory(m_device->getDevice(), stagingBufferMemory);
 
-    m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+    m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, renderComp.m_vertexBuffer, renderComp.m_vertexBufferMemory);
 
-    m_device->copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+    m_device->copyBuffer(stagingBuffer, renderComp.m_vertexBuffer, bufferSize);
 
     vkDestroyBuffer(m_device->getDevice(), stagingBuffer, nullptr);
     vkFreeMemory(m_device->getDevice(), stagingBufferMemory, nullptr);
 }
 
-void GameApp::createIndexBuffer(std::vector<uint32_t>& indices, VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory)
+void GameApp::createIndexBuffer(entt::entity entity)
 {
-    VkDeviceSize bufferSize = sizeof(uint32_t) * indices.size();
+    auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
+    VkDeviceSize bufferSize = sizeof(uint32_t) * renderComp.m_indices.size();
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -297,12 +314,12 @@ void GameApp::createIndexBuffer(std::vector<uint32_t>& indices, VkBuffer& indexB
 
     void* data;
     vkMapMemory(m_device->getDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, indices.data(), (size_t)bufferSize);
+    memcpy(data, renderComp.m_indices.data(), (size_t)bufferSize);
     vkUnmapMemory(m_device->getDevice(), stagingBufferMemory);
 
-    m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
+    m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, renderComp.m_indexBuffer, renderComp.m_indexBufferMemory);
 
-    m_device->copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+    m_device->copyBuffer(stagingBuffer, renderComp.m_indexBuffer, bufferSize);
 
     vkDestroyBuffer(m_device->getDevice(), stagingBuffer, nullptr);
     vkFreeMemory(m_device->getDevice(), stagingBufferMemory, nullptr);
@@ -441,7 +458,7 @@ void GameApp::updateUniformBuffer(uint32_t currentImage)
 
     CameraUBO u_camera{};
     u_camera.model = glm::rotate(glm::mat4(1.f), glm::radians(45.f), glm::vec3(0.f, 1.f, 0.f));
-    u_camera.model = glm::translate(u_camera.model, glm::vec3(m_position, -3.f, 0.f));
+    u_camera.model = glm::translate(u_camera.model, glm::vec3(0.f, -3.f, 0.f));
     u_camera.model = glm::scale(u_camera.model, glm::vec3(0.4f, 0.4f, 0.4f));
     u_camera.view = glm::lookAt(glm::vec3(3.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
     u_camera.proj = glm::perspective(glm::radians(45.f), m_renderer->getSwapchainAspectRatio(), 0.1f, 10.f);

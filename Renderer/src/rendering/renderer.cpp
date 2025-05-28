@@ -188,7 +188,7 @@ void Renderer::recordCommandBuffer(bool compute, Pipeline* pipeline, const uint3
         throw std::runtime_error("Failed to record render command buffer.");
 }
 
-void Renderer::recordCommandBuffer(Pipeline* pipeline, std::vector<VkBuffer> vertexBuffers, std::vector<VkBuffer> indexBuffers, std::vector<VkDescriptorSet> descriptorSets, std::vector<std::vector<uint32_t>> indices)
+void Renderer::recordCommandBuffer(Pipeline* pipeline, entt::registry& m_registry, std::vector<entt::entity> entities, std::vector<VkDescriptorSet> descriptorSets)
 {
     VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
 
@@ -205,16 +205,16 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, std::vector<VkBuffer> ver
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayout(), 0, 1, &descriptorSets[m_currentFrame], 0, nullptr);
 
-    glm::mat4 transform = glm::translate(glm::mat4(1.f), glm::vec3(-2.f, 0.f, 0.f));
-
-    for (int i = 0; i < vertexBuffers.size(); i++)
+    for (entt::entity& entity : entities)
     {
-        transform = glm::translate(transform, glm::vec3(2.f * i, 0.f, 0.f));
+        auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
+        auto& transformComp = m_registry.get<Rock::TransformComponent>(entity);
+
         VkDeviceSize offsets[] = { 0 };
-        vkCmdPushConstants(commandBuffer, pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform);
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffers[i], offsets);
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffers[i], 0, VK_INDEX_TYPE_UINT32);
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices[i].size()), 1, 0, 0, 0);
+        vkCmdPushConstants(commandBuffer, pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transformComp.m_transform);
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &renderComp.m_vertexBuffer, offsets);
+        vkCmdBindIndexBuffer(commandBuffer, renderComp.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(renderComp.m_indices.size()), 1, 0, 0, 0);
     }
 
     vkCmdEndRenderPass(commandBuffer);
