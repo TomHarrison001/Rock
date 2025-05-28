@@ -4,15 +4,25 @@
 
 #include <chrono>
 
+#include <glm/gtc/constants.hpp>
+
 #include "core/application.hpp"
+#include "rendering/lights.hpp"
 
 class EngineApp : public Application
 {
 private:
-    struct UniformBufferObject {
+    struct CameraUBO {
         alignas(16) glm::mat4 model;
         alignas(16) glm::mat4 view;
         alignas(16) glm::mat4 proj;
+    };
+    struct LightUBO {
+        alignas(16) DirectionalLight dLight;
+        alignas(16) PointLight pLights[1]; 
+    };
+    struct ViewUBO {
+        alignas(16) glm::vec3 viewPos;
     };
 
     void initApplication() override;
@@ -53,10 +63,18 @@ private:
     VkBuffer m_vertexBuffer;
     VkDeviceMemory m_vertexBufferMemory;
     VkBuffer m_indexBuffer;
+
+    // camera and light UBOs
     VkDeviceMemory m_indexBufferMemory;
-    std::vector<VkBuffer> m_uniformBuffers;
-    std::vector<VkDeviceMemory> m_uniformBuffersMemory;
-    std::vector<void*> m_uniformBuffersMapped;
+    std::vector<VkBuffer> m_cameraBuffers;
+    std::vector<VkBuffer> m_lightBuffers;
+    std::vector<VkBuffer> m_viewPosBuffers;
+    std::vector<VkDeviceMemory> m_cameraBuffersMemory;
+    std::vector<VkDeviceMemory> m_lightBuffersMemory;
+    std::vector<VkDeviceMemory> m_viewPosBuffersMemory;
+    std::vector<void*> m_cameraBuffersMapped;
+    std::vector<void*> m_lightBuffersMapped;
+    std::vector<void*> m_viewPosBuffersMapped;
 
     float m_translate[3]{ 0.f, 0.f, 0.f };
     float m_rotate[3]{ 0.f, 0.f, 0.f };

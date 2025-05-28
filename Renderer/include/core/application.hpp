@@ -60,6 +60,7 @@ struct Vertex
     glm::vec3 pos;
     glm::vec3 colour;
     glm::vec2 texCoord;
+    glm::vec3 norm;
 
     static VkVertexInputBindingDescription getBindingDescription()
     {
@@ -96,12 +97,19 @@ struct Vertex
         texCoordAttrib.offset = offsetof(Vertex, texCoord);
         attributeDescriptions.push_back(texCoordAttrib);
 
+        VkVertexInputAttributeDescription normAttrib{};
+        normAttrib.binding = 0;
+        normAttrib.location = 3;
+        normAttrib.format = VK_FORMAT_R32G32B32_SFLOAT;
+        normAttrib.offset = offsetof(Vertex, norm);
+        attributeDescriptions.push_back(normAttrib);
+
         return attributeDescriptions;
     }
 
     bool operator==(const Vertex& other) const
     {
-        return pos == other.pos && colour == other.colour && texCoord == other.texCoord;
+        return pos == other.pos && colour == other.colour && texCoord == other.texCoord && norm == other.norm;
     }
 };
 

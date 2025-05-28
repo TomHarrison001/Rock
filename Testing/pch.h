@@ -57,7 +57,6 @@
 #include "core/descriptors.hpp"
 #include "rendering/renderer.hpp"
 #include "core/application.hpp"
-#include "examples/modelApp.hpp"
 #include "examples/computeApp.hpp"
 #include "examples/engineApp.hpp"
 

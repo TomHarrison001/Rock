@@ -176,6 +176,7 @@
     <ClInclude Include="include\core\device.hpp" />
     <ClInclude Include="include\examples\computeApp.hpp" />
     <ClInclude Include="include\examples\engineApp.hpp" />
+    <ClInclude Include="include\rendering\lights.hpp" />
     <ClInclude Include="include\rendering\pipeline.hpp" />
     <ClInclude Include="include\rendering\renderer.hpp" />
     <ClInclude Include="include\rendering\swapchain.hpp" />
@@ -187,8 +188,8 @@
     <None Include="res\shaders\computeApp\main.comp" />
     <None Include="res\shaders\computeApp\main.frag" />
     <None Include="res\shaders\computeApp\main.vert" />
-    <None Include="res\shaders\modelApp\main.frag" />
-    <None Include="res\shaders\modelApp\main.vert" />
+    <None Include="res\shaders\engineApp\main.frag" />
+    <None Include="res\shaders\engineApp\main.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

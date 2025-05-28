@@ -84,8 +84,12 @@ void EngineApp::cleanup()
     vkFreeMemory(m_device->getDevice(), m_indexBufferMemory, nullptr);
     for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
     {
-        vkDestroyBuffer(m_device->getDevice(), m_uniformBuffers[i], nullptr);
-        vkFreeMemory(m_device->getDevice(), m_uniformBuffersMemory[i], nullptr);
+        vkDestroyBuffer(m_device->getDevice(), m_cameraBuffers[i], nullptr);
+        vkDestroyBuffer(m_device->getDevice(), m_lightBuffers[i], nullptr);
+        vkDestroyBuffer(m_device->getDevice(), m_viewPosBuffers[i], nullptr);
+        vkFreeMemory(m_device->getDevice(), m_cameraBuffersMemory[i], nullptr);
+        vkFreeMemory(m_device->getDevice(), m_lightBuffersMemory[i], nullptr);
+        vkFreeMemory(m_device->getDevice(), m_viewPosBuffersMemory[i], nullptr);
     }
     delete m_descriptorManager;
     m_descriptorManager = nullptr;
@@ -114,6 +118,8 @@ void EngineApp::createDescriptorSetLayout()
 {
     m_descriptorManager->addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
     m_descriptorManager->addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    m_descriptorManager->addBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    m_descriptorManager->addBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
     m_descriptorManager->buildDescriptorSetLayout();
 }
 
@@ -152,7 +158,7 @@ void EngineApp::createGraphicsPipeline()
 void EngineApp::createTextureImage()
 {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load("./res/textures/cube.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load("./res/textures/ironGolem.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
     m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
@@ -220,7 +226,7 @@ void EngineApp::loadModel()
     std::vector<tinyobj::material_t> materials;
     std::string warn, err;
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "./res/models/cube.obj"))
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "./res/models/ironGolem.obj"))
         throw std::runtime_error(warn + err);
 
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
@@ -232,9 +238,15 @@ void EngineApp::loadModel()
             Vertex vertex{};
 
             vertex.pos = {
-                attrib.vertices[3 * index.vertex_index + 0] * 0.5f, // scale: 0.5f
-                attrib.vertices[3 * index.vertex_index + 1] * 0.5f, // scale: 0.5f
-                attrib.vertices[3 * index.vertex_index + 2] * 0.5f  // scale: 0.5f
+                attrib.vertices[3 * index.vertex_index + 0] * 0.04f, // scale: 0.04f
+                attrib.vertices[3 * index.vertex_index + 1] * 0.04f, // scale: 0.04f
+                attrib.vertices[3 * index.vertex_index + 2] * 0.04f  // scale: 0.04f
+            };
+
+            vertex.norm = {
+                attrib.normals[3 * index.normal_index + 0],
+                attrib.normals[3 * index.normal_index + 1],
+                attrib.normals[3 * index.normal_index + 2]
             };
 
             vertex.texCoord = {
@@ -243,7 +255,6 @@ void EngineApp::loadModel()
             };
 
             vertex.colour = { 1.f, 1.f, 1.f };
-
             if (uniqueVertices.count(vertex) == 0)
             {
                 uniqueVertices[vertex] = static_cast<uint32_t>(m_vertices.size());
@@ -299,16 +310,24 @@ void EngineApp::createIndexBuffer()
 
 void EngineApp::createUniformBuffers()
 {
-    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
-    m_uniformBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
-    m_uniformBuffersMemory.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
-    m_uniformBuffersMapped.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    m_cameraBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    m_lightBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    m_viewPosBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    m_cameraBuffersMemory.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    m_lightBuffersMemory.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    m_viewPosBuffersMemory.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    m_cameraBuffersMapped.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    m_lightBuffersMapped.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    m_viewPosBuffersMapped.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
 
     for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
     {
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_uniformBuffers[i], m_uniformBuffersMemory[i]);
-        vkMapMemory(m_device->getDevice(), m_uniformBuffersMemory[i], 0, bufferSize, 0, &m_uniformBuffersMapped[i]);
+        m_device->createBuffer(sizeof(CameraUBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_cameraBuffers[i], m_cameraBuffersMemory[i]);
+        vkMapMemory(m_device->getDevice(), m_cameraBuffersMemory[i], 0, sizeof(CameraUBO), 0, &m_cameraBuffersMapped[i]);
+        m_device->createBuffer(sizeof(LightUBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_lightBuffers[i], m_lightBuffersMemory[i]);
+        vkMapMemory(m_device->getDevice(), m_lightBuffersMemory[i], 0, sizeof(LightUBO), 0, &m_lightBuffersMapped[i]);
+        m_device->createBuffer(sizeof(ViewUBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_viewPosBuffers[i], m_viewPosBuffersMemory[i]);
+        vkMapMemory(m_device->getDevice(), m_viewPosBuffersMemory[i], 0, sizeof(ViewUBO), 0, &m_viewPosBuffersMapped[i]);
     }
 }
 
@@ -316,6 +335,8 @@ void EngineApp::createDescriptorPool()
 {
     m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
     m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT * 2));
+    m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
+    m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
     m_descriptorManager->buildDescriptorPool();
 }
 
@@ -345,12 +366,12 @@ void EngineApp::createDescriptorSets()
 
     for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
     {
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = m_uniformBuffers[i];
-        bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UniformBufferObject);
+        VkDescriptorBufferInfo cameraBufferInfo{};
+        cameraBufferInfo.buffer = m_cameraBuffers[i];
+        cameraBufferInfo.offset = 0;
+        cameraBufferInfo.range = sizeof(CameraUBO);
 
-        m_descriptorManager->addWriteDescriptorSet(0, &bufferInfo, nullptr);
+        m_descriptorManager->addWriteDescriptorSet(0, &cameraBufferInfo, nullptr);
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -358,6 +379,20 @@ void EngineApp::createDescriptorSets()
         imageInfo.sampler = m_textureSampler;
 
         m_descriptorManager->addWriteDescriptorSet(1, nullptr, &imageInfo);
+
+        VkDescriptorBufferInfo lightBufferInfo{};
+        lightBufferInfo.buffer = m_lightBuffers[i];
+        lightBufferInfo.offset = 0;
+        lightBufferInfo.range = sizeof(LightUBO);
+
+        m_descriptorManager->addWriteDescriptorSet(2, &lightBufferInfo, nullptr);
+
+        VkDescriptorBufferInfo viewPosBufferInfo{};
+        viewPosBufferInfo.buffer = m_viewPosBuffers[i];
+        viewPosBufferInfo.offset = 0;
+        viewPosBufferInfo.range = sizeof(ViewUBO);
+
+        m_descriptorManager->addWriteDescriptorSet(3, &viewPosBufferInfo, nullptr);
 
         m_descriptorManager->overwrite(i);
     }
@@ -404,20 +439,29 @@ void EngineApp::updateUniformBuffer(uint32_t currentImage)
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    UniformBufferObject ubo{};
+    CameraUBO u_camera{};
+    u_camera.model = glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
+    u_camera.model = glm::translate(u_camera.model, glm::vec3(m_translate[0], m_translate[1], m_translate[2]));
+    u_camera.model = glm::rotate(u_camera.model, glm::radians(m_rotate[0]), glm::vec3(1.f, 0.f, 0.f));
+    u_camera.model = glm::rotate(u_camera.model, glm::radians(m_rotate[1]), glm::vec3(0.f, 1.f, 0.f));
+    u_camera.model = glm::rotate(u_camera.model, glm::radians(m_rotate[2]), glm::vec3(0.f, 0.f, 1.f));
+    u_camera.model = glm::scale(u_camera.model, glm::vec3(m_scale[0], m_scale[1], m_scale[2]));
+    u_camera.view = glm::lookAt(glm::vec3(2.f), glm::vec3(0.f), glm::vec3(0.f, 0.f, 1.f));
+    u_camera.proj = glm::perspective(glm::radians(45.f), m_renderer->getSwapchainAspectRatio(), 0.1f, 10.f);
+    u_camera.proj[1][1] *= -1.f; // image would be renderered upside down otherwise due to glm being originally designed for OpenGL where the Y coord is inverted
+    memcpy(m_cameraBuffersMapped[currentImage], &u_camera, sizeof(u_camera));
 
-    ubo.model = glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
-    ubo.model = glm::translate(ubo.model, glm::vec3(m_translate[0], m_translate[1], m_translate[2]));
-    ubo.model = glm::rotate(ubo.model, glm::radians(m_rotate[0]), glm::vec3(1.f, 0.f, 0.f));
-    ubo.model = glm::rotate(ubo.model, glm::radians(m_rotate[1]), glm::vec3(0.f, 1.f, 0.f));
-    ubo.model = glm::rotate(ubo.model, glm::radians(m_rotate[2]), glm::vec3(0.f, 0.f, 1.f));
-    ubo.model = glm::scale(ubo.model, glm::vec3(m_scale[0], m_scale[1], m_scale[2]));
+    LightUBO u_light{};
+    u_light.dLight.colour = glm::vec3(1.f, 1.f, 0.f);
+    u_light.dLight.direction = glm::vec3(0.f, -1.f, 0.f);
+    u_light.pLights[0].colour = glm::vec3(1.f, 1.f, 0.f);
+    u_light.pLights[0].position = glm::vec3(1.f, 1.f, 1.f);
+    u_light.pLights[0].constants = glm::vec3(1.f, 0.1f, 0.01f);
+    memcpy(m_lightBuffersMapped[currentImage], &u_light, sizeof(u_light));
 
-    ubo.view = glm::lookAt(glm::vec3(2.f), glm::vec3(0.f), glm::vec3(0.f, 0.f, 1.f));
-    ubo.proj = glm::perspective(glm::radians(45.f), m_renderer->getSwapchainAspectRatio(), 0.1f, 10.f);
-    ubo.proj[1][1] *= -1.f; // image would be renderered upside down otherwise due to glm being originally designed for OpenGL where the Y coord is inverted
-
-    memcpy(m_uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+    ViewUBO u_viewPos{};
+    u_viewPos.viewPos = glm::vec3(2.f, 2.f, 2.f);
+    memcpy(m_viewPosBuffersMapped[currentImage], &u_viewPos, sizeof(u_viewPos));
 }
 
 void EngineApp::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels)

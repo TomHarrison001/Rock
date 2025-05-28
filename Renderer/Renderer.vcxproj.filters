@@ -31,9 +31,6 @@
     <Filter Include="Source Files\window">
       <UniqueIdentifier>{a5cd3c1a-fe55-46c9-b62e-ca9680de32ce}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files\modelApp">
-      <UniqueIdentifier>{ad176066-e4a8-4735-9aff-7f6cf479a64f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource Files\computeApp">
       <UniqueIdentifier>{df05de16-9872-4242-8187-b091da7a2434}</UniqueIdentifier>
     </Filter>
@@ -48,6 +45,9 @@
     </Filter>
     <Filter Include="Source Files\imgui">
       <UniqueIdentifier>{1d63f439-646b-4268-8d60-2ad45f9ad7d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\engineApp">
+      <UniqueIdentifier>{ad176066-e4a8-4735-9aff-7f6cf479a64f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -161,14 +161,11 @@
     <ClInclude Include="..\Dependencies\imgui\imstb_truetype.h">
       <Filter>Header Files\imgui</Filter>
     </ClInclude>
+    <ClInclude Include="include\rendering\lights.hpp">
+      <Filter>Header Files\rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\shaders\modelApp\main.frag">
-      <Filter>Resource Files\modelApp</Filter>
-    </None>
-    <None Include="res\shaders\modelApp\main.vert">
-      <Filter>Resource Files\modelApp</Filter>
-    </None>
     <None Include="res\shaders\computeApp\main.comp">
       <Filter>Resource Files\computeApp</Filter>
     </None>
@@ -177,6 +174,12 @@
     </None>
     <None Include="res\shaders\computeApp\main.vert">
       <Filter>Resource Files\computeApp</Filter>
+    </None>
+    <None Include="res\shaders\engineApp\main.frag">
+      <Filter>Resource Files\engineApp</Filter>
+    </None>
+    <None Include="res\shaders\engineApp\main.vert">
+      <Filter>Resource Files\engineApp</Filter>
     </None>
   </ItemGroup>
 </Project>
