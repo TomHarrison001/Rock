@@ -1,10 +1,12 @@
 #include "examples/computeApp.hpp"
 #include "examples/engineApp.hpp"
+#include "examples/gameApp.hpp"
 
 int main()
 {
     //Application* app = new ComputeApp();
-    Application* app = new EngineApp();
+    //Application* app = new EngineApp();
+    Application* app = new GameApp();
 
     try
     {

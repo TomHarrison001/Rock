@@ -7,6 +7,8 @@ echo Compiling shaders...
 
 C:/VulkanSDK/1.4.309.0/Bin/glslc.exe ./Renderer/res/shaders/engineApp/main.vert -o ./Renderer/res/shaders/engineApp/vert.spv
 C:/VulkanSDK/1.4.309.0/Bin/glslc.exe ./Renderer/res/shaders/engineApp/main.frag -o ./Renderer/res/shaders/engineApp/frag.spv
+C:/VulkanSDK/1.4.309.0/Bin/glslc.exe ./Renderer/res/shaders/gameApp/main.vert -o ./Renderer/res/shaders/gameApp/vert.spv
+C:/VulkanSDK/1.4.309.0/Bin/glslc.exe ./Renderer/res/shaders/gameApp/main.frag -o ./Renderer/res/shaders/gameApp/frag.spv
 C:/VulkanSDK/1.4.309.0/Bin/glslc.exe ./Renderer/res/shaders/computeApp/main.vert -o ./Renderer/res/shaders/computeApp/vert.spv
 C:/VulkanSDK/1.4.309.0/Bin/glslc.exe ./Renderer/res/shaders/computeApp/main.frag -o ./Renderer/res/shaders/computeApp/frag.spv
 C:/VulkanSDK/1.4.309.0/Bin/glslc.exe ./Renderer/res/shaders/computeApp/main.comp -o ./Renderer/res/shaders/computeApp/comp.spv

@@ -49,6 +49,9 @@
     <Filter Include="Resource Files\engineApp">
       <UniqueIdentifier>{ad176066-e4a8-4735-9aff-7f6cf479a64f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\gameApp">
+      <UniqueIdentifier>{de6cb862-00d6-4a1e-8894-b3605ca39d86}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -101,6 +104,9 @@
     </ClCompile>
     <ClCompile Include="..\Dependencies\imgui\backends\imgui_impl_vulkan.cpp">
       <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\examples\gameApp.cpp">
+      <Filter>Source Files\examples</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -164,6 +170,9 @@
     <ClInclude Include="include\rendering\lights.hpp">
       <Filter>Header Files\rendering</Filter>
     </ClInclude>
+    <ClInclude Include="include\examples\gameApp.hpp">
+      <Filter>Header Files\examples</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="res\shaders\computeApp\main.comp">
@@ -180,6 +189,12 @@
     </None>
     <None Include="res\shaders\engineApp\main.vert">
       <Filter>Resource Files\engineApp</Filter>
+    </None>
+    <None Include="res\shaders\gameApp\main.frag">
+      <Filter>Resource Files\gameApp</Filter>
+    </None>
+    <None Include="res\shaders\gameApp\main.vert">
+      <Filter>Resource Files\gameApp</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -1,14 +1,14 @@
-/** \file engineApp.cpp */
+/** \file gameApp.cpp */
 
-#include "examples/engineApp.hpp"
+#include "examples/gameApp.hpp"
 
-//#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
-//#define TINYOBJLOADER_IMPLEMENTATION
+#define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader/tiny_obj_loader.h>
 
-void EngineApp::initApplication()
+void GameApp::initApplication()
 {
     m_device = new Device();
     m_msaaSamples = m_device->getMaxUsableSampleCount();
@@ -26,31 +26,9 @@ void EngineApp::initApplication()
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
-
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-    ImGui_ImplGlfw_InitForVulkan(m_device->getWindow()->getWindow(), true);
-    ImGui_ImplVulkan_InitInfo info{};
-    info.DescriptorPool = m_descriptorManager->getDescriptorPool();
-    info.RenderPass = m_renderer->getSwapchainRenderPass();
-    info.Device = m_device->getDevice();
-    info.PhysicalDevice = m_device->getPhysicalDevice();
-    info.MinImageCount = Swapchain::MAX_FRAMES_IN_FLIGHT;
-    info.ImageCount = Swapchain::MAX_FRAMES_IN_FLIGHT;
-    info.MSAASamples = m_msaaSamples;
-    info.Instance = m_device->getInstance();
-    info.Queue = m_device->getGraphicsQueue();
-    ImGui_ImplVulkan_Init(&info);
-
-    // load font
-    io.Fonts->AddFontFromFileTTF("./res/fonts/Segoe-UI-Variable-Static-Text-Semibold.ttf", 16.f);
-
-    vkDeviceWaitIdle(m_device->getDevice());
 }
 
-void EngineApp::mainLoop()
+void GameApp::mainLoop()
 {
     while (!m_device->getWindow()->shouldClose())
     {
@@ -62,17 +40,25 @@ void EngineApp::mainLoop()
             std::cout << "[EventSystem] Exiting..." << std::endl;
             m_device->closeWindow();
         }
+
+        if (m_device->isKeyPressed(GLFW_KEY_A) || m_device->isKeyPressed(GLFW_KEY_LEFT))
+        {
+            m_position -= 0.01f;
+            m_position = std::clamp(m_position, -2.f, 2.f);
+        }
+
+        if (m_device->isKeyPressed(GLFW_KEY_D) || m_device->isKeyPressed(GLFW_KEY_RIGHT))
+        {
+            m_position += 0.01f;
+            m_position = std::clamp(m_position, -2.f, 2.f);
+        }
     }
 
     vkDeviceWaitIdle(m_device->getDevice());
 }
 
-void EngineApp::cleanup()
+void GameApp::cleanup()
 {
-    ImGui_ImplVulkan_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-
     m_graphicsPipeline->destroyPipelineLayout();
     vkDestroySampler(m_device->getDevice(), m_textureSampler, nullptr);
     vkDestroyImageView(m_device->getDevice(), m_textureImageView, nullptr);
@@ -101,20 +87,20 @@ void EngineApp::cleanup()
     m_device = nullptr;
 }
 
-void EngineApp::drawFrame()
+void GameApp::drawFrame()
 {
     vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getFence(), VK_TRUE, UINT64_MAX);
     m_renderer->beginFrame();
     updateUniformBuffer(m_renderer->getCurrentFrame());
-    m_renderer->recordCommandBuffer(m_graphicsPipeline, m_vertexBuffer, m_indexBuffer, m_descriptorManager->getDescriptorSets(), m_indices, m_translate, m_rotate, m_scale);
     vkResetFences(m_device->getDevice(), 1, &m_renderer->getFence());
-    //vkResetCommandBuffer(m_renderer->getCommandBuffer(), 0);
+    vkResetCommandBuffer(m_renderer->getCommandBuffer(), 0);
+    m_renderer->recordCommandBuffer(m_graphicsPipeline, m_vertexBuffer, m_indexBuffer, m_descriptorManager->getDescriptorSets(), m_indices);
     m_renderer->submitCommandBuffer();
 
     m_renderer->endFrame();
 }
 
-void EngineApp::createDescriptorSetLayout()
+void GameApp::createDescriptorSetLayout()
 {
     m_descriptorManager->addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
     m_descriptorManager->addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -123,7 +109,7 @@ void EngineApp::createDescriptorSetLayout()
     m_descriptorManager->buildDescriptorSetLayout();
 }
 
-void EngineApp::createGraphicsPipeline()
+void GameApp::createGraphicsPipeline()
 {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -152,13 +138,13 @@ void EngineApp::createGraphicsPipeline()
     pipelineSettings.renderPass = m_renderer->getSwapchainRenderPass();
     pipelineSettings.subpass = 0;
 
-    m_graphicsPipeline = new Pipeline(m_device, pipelineLayoutInfo, pipelineSettings, "./res/shaders/engineApp/vert.spv", "./res/shaders/engineApp/frag.spv");
+    m_graphicsPipeline = new Pipeline(m_device, pipelineLayoutInfo, pipelineSettings, "./res/shaders/gameApp/vert.spv", "./res/shaders/gameApp/frag.spv");
 }
 
-void EngineApp::createTextureImage()
+void GameApp::createTextureImage()
 {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load("./res/textures/ironGolem.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load("./res/textures/cube.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
     m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
@@ -187,12 +173,12 @@ void EngineApp::createTextureImage()
     generateMipmaps(m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, m_mipLevels);
 }
 
-void EngineApp::createTextureImageView()
+void GameApp::createTextureImageView()
 {
     m_textureImageView = m_device->createImageView(m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, m_mipLevels);
 }
 
-void EngineApp::createTextureSampler()
+void GameApp::createTextureSampler()
 {
     VkPhysicalDeviceProperties properties{};
     vkGetPhysicalDeviceProperties(m_device->getPhysicalDevice(), &properties);
@@ -219,14 +205,14 @@ void EngineApp::createTextureSampler()
         throw std::runtime_error("Failed to create texture sampler.");
 }
 
-void EngineApp::loadModel()
+void GameApp::loadModel()
 {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
     std::string warn, err;
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "./res/models/ironGolem.obj"))
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "./res/models/cube.obj"))
         throw std::runtime_error(warn + err);
 
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
@@ -238,9 +224,9 @@ void EngineApp::loadModel()
             Vertex vertex{};
 
             vertex.pos = {
-                attrib.vertices[3 * index.vertex_index + 0] * 0.04f, // scale: 0.04f
-                attrib.vertices[3 * index.vertex_index + 1] * 0.04f, // scale: 0.04f
-                attrib.vertices[3 * index.vertex_index + 2] * 0.04f  // scale: 0.04f
+                attrib.vertices[3 * index.vertex_index + 0],
+                attrib.vertices[3 * index.vertex_index + 1],
+                attrib.vertices[3 * index.vertex_index + 2]
             };
 
             vertex.norm = {
@@ -265,7 +251,7 @@ void EngineApp::loadModel()
     }
 }
 
-void EngineApp::createVertexBuffer()
+void GameApp::createVertexBuffer()
 {
     VkDeviceSize bufferSize = sizeof(Vertex) * m_vertices.size();
 
@@ -286,7 +272,7 @@ void EngineApp::createVertexBuffer()
     vkFreeMemory(m_device->getDevice(), stagingBufferMemory, nullptr);
 }
 
-void EngineApp::createIndexBuffer()
+void GameApp::createIndexBuffer()
 {
     VkDeviceSize bufferSize = sizeof(uint32_t) * m_indices.size();
 
@@ -307,7 +293,7 @@ void EngineApp::createIndexBuffer()
     vkFreeMemory(m_device->getDevice(), stagingBufferMemory, nullptr);
 }
 
-void EngineApp::createUniformBuffers()
+void GameApp::createUniformBuffers()
 {
     m_cameraBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
     m_lightBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
@@ -330,16 +316,16 @@ void EngineApp::createUniformBuffers()
     }
 }
 
-void EngineApp::createDescriptorPool()
+void GameApp::createDescriptorPool()
 {
     m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
-    m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT * 2));
+    m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
     m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
     m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
     m_descriptorManager->buildDescriptorPool();
 }
 
-void EngineApp::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+void GameApp::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
@@ -359,7 +345,7 @@ void EngineApp::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width
     endSingleTimeCommands(commandBuffer);
 }
 
-void EngineApp::createDescriptorSets()
+void GameApp::createDescriptorSets()
 {
     m_descriptorManager->allocateDescriptorSets();
 
@@ -397,7 +383,7 @@ void EngineApp::createDescriptorSets()
     }
 }
 
-VkCommandBuffer EngineApp::beginSingleTimeCommands()
+VkCommandBuffer GameApp::beginSingleTimeCommands()
 {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -417,7 +403,7 @@ VkCommandBuffer EngineApp::beginSingleTimeCommands()
     return commandBuffer;
 }
 
-void EngineApp::endSingleTimeCommands(VkCommandBuffer commandBuffer)
+void GameApp::endSingleTimeCommands(VkCommandBuffer commandBuffer)
 {
     vkEndCommandBuffer(commandBuffer);
 
@@ -431,7 +417,7 @@ void EngineApp::endSingleTimeCommands(VkCommandBuffer commandBuffer)
     vkFreeCommandBuffers(m_device->getDevice(), m_device->getCommandPool(), 1, &commandBuffer);
 }
 
-void EngineApp::updateUniformBuffer(uint32_t currentImage)
+void GameApp::updateUniformBuffer(uint32_t currentImage)
 {
     static auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -439,13 +425,10 @@ void EngineApp::updateUniformBuffer(uint32_t currentImage)
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     CameraUBO u_camera{};
-    u_camera.model = glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
-    u_camera.model = glm::translate(u_camera.model, glm::vec3(m_translate[0], m_translate[1], m_translate[2]));
-    u_camera.model = glm::rotate(u_camera.model, glm::radians(m_rotate[0]), glm::vec3(1.f, 0.f, 0.f));
-    u_camera.model = glm::rotate(u_camera.model, glm::radians(m_rotate[1]), glm::vec3(0.f, 1.f, 0.f));
-    u_camera.model = glm::rotate(u_camera.model, glm::radians(m_rotate[2]), glm::vec3(0.f, 0.f, 1.f));
-    u_camera.model = glm::scale(u_camera.model, glm::vec3(m_scale[0], m_scale[1], m_scale[2]));
-    u_camera.view = glm::lookAt(glm::vec3(2.f), glm::vec3(0.f), glm::vec3(0.f, 0.f, 1.f));
+    u_camera.model = glm::rotate(glm::mat4(1.f), glm::radians(45.f), glm::vec3(0.f, 1.f, 0.f));
+    u_camera.model = glm::translate(u_camera.model, glm::vec3(m_position, -3.f, 0.f));
+    u_camera.model = glm::scale(u_camera.model, glm::vec3(0.4f, 0.4f, 0.4f));
+    u_camera.view = glm::lookAt(glm::vec3(3.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
     u_camera.proj = glm::perspective(glm::radians(45.f), m_renderer->getSwapchainAspectRatio(), 0.1f, 10.f);
     u_camera.proj[1][1] *= -1.f; // image would be renderered upside down otherwise due to glm being originally designed for OpenGL where the Y coord is inverted
     memcpy(m_cameraBuffersMapped[currentImage], &u_camera, sizeof(u_camera));
@@ -463,7 +446,7 @@ void EngineApp::updateUniformBuffer(uint32_t currentImage)
     memcpy(m_viewPosBuffersMapped[currentImage], &u_viewPos, sizeof(u_viewPos));
 }
 
-void EngineApp::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels)
+void GameApp::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels)
 {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
@@ -521,7 +504,7 @@ void EngineApp::transitionImageLayout(VkImage image, VkFormat format, VkImageLay
     endSingleTimeCommands(commandBuffer);
 }
 
-void EngineApp::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
+void GameApp::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
 {
     VkFormatProperties properties;
     vkGetPhysicalDeviceFormatProperties(m_device->getPhysicalDevice(), imageFormat, &properties);
