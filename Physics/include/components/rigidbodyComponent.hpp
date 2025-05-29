@@ -14,12 +14,10 @@ namespace Rock
 		void update(float deltaTime)
 		{
 			// update acceleration
-			if (m_grounded)
-			{
-				m_acceleration.y = 0.f;
-				m_velocity.y = 0.f;
+			if (!m_grounded && m_gravity) {
+			    addForce(gravity * deltaTime);
+				m_velocity.z = 0.f;
 			}
-			else addForce(gravity * deltaTime);
 			// update velocity
 			m_velocity += m_acceleration * deltaTime;
 		}

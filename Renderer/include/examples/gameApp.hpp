@@ -6,7 +6,10 @@
 
 #include <glm/gtc/constants.hpp>
 
+#include "mathematics/mathematics.hpp"
 #include "core/application.hpp"
+
+enum GameState { playing, gameOver };
 
 class GameApp : public Application
 {
@@ -68,7 +71,10 @@ private:
     std::vector<void*> m_lightBuffersMapped;
     std::vector<void*> m_viewPosBuffersMapped;
 
+    GameState m_gameState = gameOver;
     entt::registry m_registry;
-    entt::entity m_cube1;
-    entt::entity m_cube2;
+    entt::entity m_floor;
+    entt::entity m_player;
+    std::vector<entt::entity> m_cubes;
+    float m_force;
 };

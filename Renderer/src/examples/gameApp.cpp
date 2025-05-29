@@ -20,14 +20,27 @@ void GameApp::initApplication()
     createTextureImage();
     createTextureImageView();
     createTextureSampler();
-    m_cube1 = m_registry.create();
-    m_registry.emplace<Rock::TransformComponent>(m_cube1, glm::vec3(-2.f, 0.f, 0.f), glm::vec3(0.f), glm::vec3(1.f));
-    m_registry.emplace<Rock::RenderComponent>(m_cube1);
-    loadModel(m_cube1, "./res/models/cube.obj");
-    m_cube2 = m_registry.create();
-    m_registry.emplace<Rock::TransformComponent>(m_cube2, glm::vec3(0.f), glm::vec3(0.f), glm::vec3(1.f));
-    m_registry.emplace<Rock::RenderComponent>(m_cube2);
-    loadModel(m_cube2, "./res/models/cube.obj");
+    m_floor = m_registry.create();
+    m_registry.emplace<Rock::RenderComponent>(m_floor);
+    m_registry.emplace<Rock::TransformComponent>(m_floor, glm::vec3(0.f, -1.f, 53.5f), glm::vec3(0.f), glm::vec3(5.f, 1.f, 120.f));
+    m_registry.emplace<Rock::OBBComponent>(m_floor, glm::vec3(2.5f, 0.5f, 60.f));
+    loadModel(m_floor, "./res/models/cube.obj");
+    m_player = m_registry.create();
+    m_registry.emplace<Rock::RenderComponent>(m_player);
+    m_registry.emplace<Rock::TransformComponent>(m_player, glm::vec3(0.f, 0.f, -5.f), glm::vec3(0.f), glm::vec3(1.f));
+    m_registry.emplace<Rock::OBBComponent>(m_player, glm::vec3(0.5f));
+    loadModel(m_player, "./res/models/cube.obj");
+    for (int i = 0; i < 12; i++)
+    {
+        entt::entity entity = m_registry.create();
+        m_cubes.push_back(entity);
+        double x = (double)rand() / RAND_MAX;
+        m_registry.emplace<Rock::RenderComponent>(entity);
+        m_registry.emplace<Rock::TransformComponent>(entity, glm::vec3(x * 4.f - 2.f, 0.f, 10.f * i), glm::vec3(0.f), glm::vec3(1.f));
+        m_registry.emplace<Rock::OBBComponent>(entity, glm::vec3(0.5f));
+        m_registry.emplace<Rock::RigidbodyComponent>(entity, 100.f);
+        loadModel(entity, "./res/models/cube.obj");
+    }
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
@@ -46,22 +59,85 @@ void GameApp::mainLoop()
             m_device->closeWindow();
         }
 
-        auto& transformComp = m_registry.get<Rock::TransformComponent>(m_cube1);
-
-        if (m_device->isKeyPressed(GLFW_KEY_A) || m_device->isKeyPressed(GLFW_KEY_LEFT))
+        if (m_gameState == gameOver)
         {
-            float z = transformComp.m_translation.z;
-            z = std::clamp(z - 0.01f, -2.f, 2.f);
-            transformComp.m_translation = glm::vec3(transformComp.m_translation.x, transformComp.m_translation.y, z);
-            transformComp.recalculate();
+            if (m_device->isKeyPressed(GLFW_KEY_SPACE))
+            {
+                m_gameState = playing;
+                // reset obstacles
+                for (int i = 0; i < m_cubes.size(); i++)
+                {
+                    auto& transformComp = m_registry.get<Rock::TransformComponent>(m_cubes[i]);
+                    double x = (double)rand() / RAND_MAX;
+                    transformComp.m_translation = glm::vec3(x * 4.f - 2.f, 0.f, 10.f * i);
+                    transformComp.recalculate();
+
+                    auto& rigidbodyComp = m_registry.get<Rock::RigidbodyComponent>(m_cubes[i]);
+                    rigidbodyComp.m_acceleration = glm::vec3(0.f);
+                    rigidbodyComp.m_velocity = glm::vec3(0.f);
+                }
+                // reset player
+                auto& transformComp = m_registry.get<Rock::TransformComponent>(m_player);
+                transformComp.m_translation = glm::vec3(0.f, 0.f, -5.f);
+                transformComp.recalculate();
+                // reset speed
+                m_force = 0.00001f;
+            }
         }
-
-        if (m_device->isKeyPressed(GLFW_KEY_D) || m_device->isKeyPressed(GLFW_KEY_RIGHT))
+        else if (m_gameState == playing)
         {
-            float z = transformComp.m_translation.z;
-            z = std::clamp(z + 0.01f, -2.f, 2.f);
-            transformComp.m_translation = glm::vec3(transformComp.m_translation.x, transformComp.m_translation.y, z);
-            transformComp.recalculate();
+            if (m_device->isKeyPressed(GLFW_KEY_A) || m_device->isKeyPressed(GLFW_KEY_LEFT))
+            {
+                auto& transformComp = m_registry.get<Rock::TransformComponent>(m_player);
+                float x = transformComp.m_translation.x;
+                x = std::clamp(x + 0.01f, -2.f, 2.f);
+                transformComp.m_translation = glm::vec3(x, transformComp.m_translation.y, transformComp.m_translation.z);
+                transformComp.recalculate();
+            }
+
+            if (m_device->isKeyPressed(GLFW_KEY_D) || m_device->isKeyPressed(GLFW_KEY_RIGHT))
+            {
+                auto& transformComp = m_registry.get<Rock::TransformComponent>(m_player);
+                float x = transformComp.m_translation.x;
+                x = std::clamp(x - 0.01f, -2.f, 2.f);
+                transformComp.m_translation = glm::vec3(x, transformComp.m_translation.y, transformComp.m_translation.z);
+                transformComp.recalculate();
+            }
+
+            for (entt::entity entity : m_cubes)
+            {
+                auto& transformComp = m_registry.get<Rock::TransformComponent>(entity);
+                float x = transformComp.m_translation.x;
+                float y = transformComp.m_translation.y;
+                float z = transformComp.m_translation.z;
+
+                auto& rigidbodyComp = m_registry.get<Rock::RigidbodyComponent>(entity);
+                rigidbodyComp.m_grounded = Rock::obbIntersectingOBB(m_registry, m_floor, entity);
+                if (rigidbodyComp.m_grounded)
+                {
+                    rigidbodyComp.addForce(glm::vec3(0.f, 0.f, -m_force));
+                }
+                rigidbodyComp.update(0.01f);
+                x += rigidbodyComp.m_velocity.x;
+                y += rigidbodyComp.m_velocity.y;
+                z += rigidbodyComp.m_velocity.z;
+
+                // check for collision
+                if (Rock::obbIntersectingOBB(m_registry, m_player, entity))
+                    m_gameState = gameOver;
+                // reset (grounded again, y + translate)
+                if (y < -3.f) {
+                    x = (float)((double)rand() / RAND_MAX) * 4.f - 2.f;
+                    y = 0.f;
+                    z = 50.f;
+                    rigidbodyComp.m_acceleration = glm::vec3(0.f);
+                    rigidbodyComp.m_velocity = glm::vec3(0.f, 0.f, -0.00001f);
+                }
+                transformComp.m_translation = glm::vec3(x, y, z);
+                transformComp.recalculate();
+            }
+
+            m_force += 0.000000001f;
         }
     }
 
@@ -75,7 +151,9 @@ void GameApp::cleanup()
     vkDestroyImageView(m_device->getDevice(), m_textureImageView, nullptr);
     vkDestroyImage(m_device->getDevice(), m_textureImage, nullptr);
     vkFreeMemory(m_device->getDevice(), m_textureImageMemory, nullptr);
-    for (entt::entity entity : { m_cube1, m_cube2 })
+    m_cubes.push_back(m_floor);
+    m_cubes.push_back(m_player);
+    for (entt::entity entity : m_cubes)
     {
         auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
         vkDestroyBuffer(m_device->getDevice(), renderComp.m_vertexBuffer, nullptr);
@@ -109,8 +187,9 @@ void GameApp::drawFrame()
     updateUniformBuffer(m_renderer->getCurrentFrame());
     vkResetFences(m_device->getDevice(), 1, &m_renderer->getFence());
     vkResetCommandBuffer(m_renderer->getCommandBuffer(), 0);
-    std::vector<entt::entity> entities = { m_cube1, m_cube2 };
-    m_renderer->recordCommandBuffer(m_graphicsPipeline, m_registry, entities, m_descriptorManager->getDescriptorSets());
+    m_cubes.push_back(m_floor); m_cubes.push_back(m_player);
+    m_renderer->recordCommandBuffer(m_graphicsPipeline, m_registry, m_cubes, m_descriptorManager->getDescriptorSets());
+    m_cubes.pop_back(); m_cubes.pop_back();
     m_renderer->submitCommandBuffer();
 
     m_renderer->endFrame();
@@ -457,18 +536,15 @@ void GameApp::updateUniformBuffer(uint32_t currentImage)
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     CameraUBO u_camera{};
-    u_camera.model = glm::rotate(glm::mat4(1.f), glm::radians(45.f), glm::vec3(0.f, 1.f, 0.f));
-    u_camera.model = glm::translate(u_camera.model, glm::vec3(0.f, -3.f, 0.f));
-    u_camera.model = glm::scale(u_camera.model, glm::vec3(0.4f, 0.4f, 0.4f));
-    u_camera.view = glm::lookAt(glm::vec3(3.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
-    u_camera.proj = glm::perspective(glm::radians(45.f), m_renderer->getSwapchainAspectRatio(), 0.1f, 10.f);
+    u_camera.view = glm::lookAt(glm::vec3(-4.f, 6.f, -12.f), glm::vec3(0.f, 0.f, -2.f), glm::vec3(0.f, 1.f, 0.f));
+    u_camera.proj = glm::perspective(glm::radians(45.f), m_renderer->getSwapchainAspectRatio(), 0.1f, 1000.f);
     u_camera.proj[1][1] *= -1.f; // image would be renderered upside down otherwise due to glm being originally designed for OpenGL where the Y coord is inverted
     memcpy(m_cameraBuffersMapped[currentImage], &u_camera, sizeof(u_camera));
 
     LightUBO u_light{};
     u_light.dLight.colour = glm::vec3(1.f, 1.f, 0.f);
-    u_light.dLight.direction = glm::vec3(0.f, -1.f, 0.f);
-    u_light.pLights[0].colour = glm::vec3(1.f, 1.f, 0.f);
+    u_light.dLight.direction = glm::vec3(-1.f, -1.f, -1.f);
+    u_light.pLights[0].colour = glm::vec3(0.f, 0.f, 0.f);
     u_light.pLights[0].position = glm::vec3(1.f, 1.f, 1.f);
     u_light.pLights[0].constants = glm::vec3(1.f, 0.1f, 0.01f);
     memcpy(m_lightBuffersMapped[currentImage], &u_light, sizeof(u_light));
