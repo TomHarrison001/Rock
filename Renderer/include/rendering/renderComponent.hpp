@@ -72,6 +72,15 @@ namespace Rock
 {
     struct RenderComponent
     {
+        // texture
+        VkDescriptorSet descriptorSet;
+        uint32_t m_mipLevels;
+        VkImage m_textureImage;
+        VkDeviceMemory m_textureImageMemory;
+        VkImageView m_textureImageView;
+        VkSampler m_textureSampler;
+
+        // model
         std::vector<Vertex> m_vertices;
         std::vector<uint32_t> m_indices;
         VkBuffer m_vertexBuffer;

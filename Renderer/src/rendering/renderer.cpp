@@ -211,6 +211,7 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, entt::registry& m_registr
         auto& transformComp = m_registry.get<Rock::TransformComponent>(entity);
 
         VkDeviceSize offsets[] = { 0 };
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayout(), 1, 1, &renderComp.descriptorSet, 0, nullptr);
         vkCmdPushConstants(commandBuffer, pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transformComp.m_transform);
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &renderComp.m_vertexBuffer, offsets);
         vkCmdBindIndexBuffer(commandBuffer, renderComp.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
@@ -247,6 +248,7 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, entt::registry& m_registr
         auto& transformComp = m_registry.get<Rock::TransformComponent>(entity);
 
         VkDeviceSize offsets[] = { 0 };
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayout(), 1, 1, &renderComp.descriptorSet, 0, nullptr);
         vkCmdPushConstants(commandBuffer, pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transformComp.m_transform);
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &renderComp.m_vertexBuffer, offsets);
         vkCmdBindIndexBuffer(commandBuffer, renderComp.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
@@ -313,11 +315,35 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, entt::registry& m_registr
     ImGui::SetNextItemOpen(true, ImGuiCond_Once);
     if (ImGui::TreeNode("Scene"))
     {
-        for (int i = 0; i < 1; i++)
+        for (int i = 1; i < 2; i++)
         {
             ImGui::PushID(i);
+            if (ImGui::TreeNode("", "Floor %d", i))
+            {
+                ImGui::PushID(i * 10 + 1);
+                if (ImGui::TreeNode("", "Transform"))
+                {
+                    ImGui::TreePop();
+                }
+                ImGui::PopID();
+                ImGui::PushID(i * 10 + 2);
+                if (ImGui::TreeNode("", "Collider"))
+                {
+                    ImGui::TreePop();
+                }
+                ImGui::PopID();
+                ImGui::PushID(i * 10 + 3);
+                if (ImGui::TreeNode("", "Rigidbody"))
+                {
+                    ImGui::TreePop();
+                }
+                ImGui::PopID();
+                ImGui::TreePop();
+            }
+            ImGui::PopID();
+            ImGui::PushID(i * 50 + 1);
             ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-            if (ImGui::TreeNode("", "GameObject %d", i + 1))
+            if (ImGui::TreeNode("", "GameObject %d", i))
             {
                 ImGui::PushID(i * 100 + 1);
                 if (ImGui::TreeNode("", "Transform"))
