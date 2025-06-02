@@ -108,6 +108,9 @@
     <ClCompile Include="src\examples\engineApp.cpp">
       <Filter>Source Files\examples</Filter>
     </ClCompile>
+    <ClCompile Include="src\core\application.cpp">
+      <Filter>Source Files\core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\core\application.hpp">
