@@ -2,10 +2,10 @@
 
 #include "examples/engineApp.hpp"
 
-//#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
-//#define TINYOBJLOADER_IMPLEMENTATION
+#define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader/tiny_obj_loader.h>
 
 void EngineApp::initApplication()
@@ -20,9 +20,11 @@ void EngineApp::initApplication()
     createTextureImage();
     createTextureImageView();
     createTextureSampler();
-    loadModel();
-    createVertexBuffer();
-    createIndexBuffer();
+    m_gameObject = m_registry.create();
+    m_registry.emplace<Rock::RenderComponent>(m_gameObject);
+    m_registry.emplace<Rock::TransformComponent>(m_gameObject, glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f), glm::vec3(1.f));
+    m_registry.emplace<Rock::OBBComponent>(m_gameObject, glm::vec3(0.5f));
+    loadModel(m_gameObject, "./res/models/player.obj");
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
@@ -62,6 +64,12 @@ void EngineApp::mainLoop()
             std::cout << "[EventSystem] Exiting..." << std::endl;
             m_device->closeWindow();
         }
+
+        auto& transformComp = m_registry.get<Rock::TransformComponent>(m_gameObject);
+        transformComp.m_translation = glm::vec3(m_translate[0], m_translate[1], m_translate[2]);
+        transformComp.m_rotation = glm::vec3(glm::radians(m_rotate[0]), glm::radians(m_rotate[1]), glm::radians(m_rotate[2]));
+        transformComp.m_scale = glm::vec3(m_scale[0], m_scale[1], m_scale[2]);
+        transformComp.recalculate();
     }
 
     vkDeviceWaitIdle(m_device->getDevice());
@@ -78,10 +86,15 @@ void EngineApp::cleanup()
     vkDestroyImageView(m_device->getDevice(), m_textureImageView, nullptr);
     vkDestroyImage(m_device->getDevice(), m_textureImage, nullptr);
     vkFreeMemory(m_device->getDevice(), m_textureImageMemory, nullptr);
-    vkDestroyBuffer(m_device->getDevice(), m_vertexBuffer, nullptr);
-    vkFreeMemory(m_device->getDevice(), m_vertexBufferMemory, nullptr);
-    vkDestroyBuffer(m_device->getDevice(), m_indexBuffer, nullptr);
-    vkFreeMemory(m_device->getDevice(), m_indexBufferMemory, nullptr);
+    std::vector<entt::entity> m_gameObjects = { m_gameObject };
+    for (entt::entity entity : m_gameObjects)
+    {
+        auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
+        vkDestroyBuffer(m_device->getDevice(), renderComp.m_vertexBuffer, nullptr);
+        vkDestroyBuffer(m_device->getDevice(), renderComp.m_indexBuffer, nullptr);
+        vkFreeMemory(m_device->getDevice(), renderComp.m_vertexBufferMemory, nullptr);
+        vkFreeMemory(m_device->getDevice(), renderComp.m_indexBufferMemory, nullptr);
+    }
     for (size_t i = 0; i < Swapchain::MAX_FRAMES_IN_FLIGHT; i++)
     {
         vkDestroyBuffer(m_device->getDevice(), m_cameraBuffers[i], nullptr);
@@ -106,9 +119,10 @@ void EngineApp::drawFrame()
     vkWaitForFences(m_device->getDevice(), 1, &m_renderer->getFence(), VK_TRUE, UINT64_MAX);
     m_renderer->beginFrame();
     updateUniformBuffer(m_renderer->getCurrentFrame());
-    m_renderer->recordCommandBuffer(m_graphicsPipeline, m_vertexBuffer, m_indexBuffer, m_descriptorManager->getDescriptorSets(), m_indices, m_translate, m_rotate, m_scale);
     vkResetFences(m_device->getDevice(), 1, &m_renderer->getFence());
-    //vkResetCommandBuffer(m_renderer->getCommandBuffer(), 0);
+    vkResetCommandBuffer(m_renderer->getCommandBuffer(), 0);
+    std::vector<entt::entity> m_gameObjects = { m_gameObject };
+    m_renderer->recordCommandBuffer(m_graphicsPipeline, m_registry, m_gameObjects, m_descriptorManager->getDescriptorSets(), m_translate, m_rotate, m_scale);
     m_renderer->submitCommandBuffer();
 
     m_renderer->endFrame();
@@ -125,12 +139,17 @@ void EngineApp::createDescriptorSetLayout()
 
 void EngineApp::createGraphicsPipeline()
 {
+    VkPushConstantRange psRange;
+    psRange.offset = 0;
+    psRange.size = sizeof(glm::mat4);
+    psRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = m_descriptorManager->getDescriptorSetLayout();
-    pipelineLayoutInfo.pushConstantRangeCount = 0; // optional
-    pipelineLayoutInfo.pPushConstantRanges = nullptr; // optional
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
+    pipelineLayoutInfo.pPushConstantRanges = &psRange;
 
     PipelineSettings pipelineSettings{};
     Pipeline::defaultPipelineSettings(pipelineSettings);
@@ -158,7 +177,7 @@ void EngineApp::createGraphicsPipeline()
 void EngineApp::createTextureImage()
 {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load("./res/textures/ironGolem.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load("./res/textures/player.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
     m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
@@ -219,17 +238,19 @@ void EngineApp::createTextureSampler()
         throw std::runtime_error("Failed to create texture sampler.");
 }
 
-void EngineApp::loadModel()
+void EngineApp::loadModel(entt::entity entity, const char* path)
 {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
     std::string warn, err;
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "./res/models/ironGolem.obj"))
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path))
         throw std::runtime_error(warn + err);
 
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
 
     for (const auto& shape : shapes)
     {
@@ -238,9 +259,9 @@ void EngineApp::loadModel()
             Vertex vertex{};
 
             vertex.pos = {
-                attrib.vertices[3 * index.vertex_index + 0] * 0.04f, // scale: 0.04f
-                attrib.vertices[3 * index.vertex_index + 1] * 0.04f, // scale: 0.04f
-                attrib.vertices[3 * index.vertex_index + 2] * 0.04f  // scale: 0.04f
+                attrib.vertices[3 * index.vertex_index + 0],
+                attrib.vertices[3 * index.vertex_index + 1],
+                attrib.vertices[3 * index.vertex_index + 2]
             };
 
             vertex.norm = {
@@ -256,18 +277,26 @@ void EngineApp::loadModel()
 
             if (uniqueVertices.count(vertex) == 0)
             {
-                uniqueVertices[vertex] = static_cast<uint32_t>(m_vertices.size());
-                m_vertices.push_back(vertex);
+                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                vertices.push_back(vertex);
             }
 
-            m_indices.push_back(uniqueVertices[vertex]);
+            indices.push_back(uniqueVertices[vertex]);
         }
     }
+
+    auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
+    renderComp.m_vertices = vertices;
+    renderComp.m_indices = indices;
+
+    createVertexBuffer(entity);
+    createIndexBuffer(entity);
 }
 
-void EngineApp::createVertexBuffer()
+void EngineApp::createVertexBuffer(entt::entity entity)
 {
-    VkDeviceSize bufferSize = sizeof(Vertex) * m_vertices.size();
+    auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
+    VkDeviceSize bufferSize = sizeof(Vertex) * renderComp.m_vertices.size();
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -275,20 +304,21 @@ void EngineApp::createVertexBuffer()
 
     void* data;
     vkMapMemory(m_device->getDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, m_vertices.data(), (size_t)bufferSize);
+    memcpy(data, renderComp.m_vertices.data(), (size_t)bufferSize);
     vkUnmapMemory(m_device->getDevice(), stagingBufferMemory);
 
-    m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vertexBuffer, m_vertexBufferMemory);
+    m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, renderComp.m_vertexBuffer, renderComp.m_vertexBufferMemory);
 
-    m_device->copyBuffer(stagingBuffer, m_vertexBuffer, bufferSize);
+    m_device->copyBuffer(stagingBuffer, renderComp.m_vertexBuffer, bufferSize);
 
     vkDestroyBuffer(m_device->getDevice(), stagingBuffer, nullptr);
     vkFreeMemory(m_device->getDevice(), stagingBufferMemory, nullptr);
 }
 
-void EngineApp::createIndexBuffer()
+void EngineApp::createIndexBuffer(entt::entity entity)
 {
-    VkDeviceSize bufferSize = sizeof(uint32_t) * m_indices.size();
+    auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
+    VkDeviceSize bufferSize = sizeof(uint32_t) * renderComp.m_indices.size();
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -296,12 +326,12 @@ void EngineApp::createIndexBuffer()
 
     void* data;
     vkMapMemory(m_device->getDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, m_indices.data(), (size_t)bufferSize);
+    memcpy(data, renderComp.m_indices.data(), (size_t)bufferSize);
     vkUnmapMemory(m_device->getDevice(), stagingBufferMemory);
 
-    m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_indexBuffer, m_indexBufferMemory);
+    m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, renderComp.m_indexBuffer, renderComp.m_indexBufferMemory);
 
-    m_device->copyBuffer(stagingBuffer, m_indexBuffer, bufferSize);
+    m_device->copyBuffer(stagingBuffer, renderComp.m_indexBuffer, bufferSize);
 
     vkDestroyBuffer(m_device->getDevice(), stagingBuffer, nullptr);
     vkFreeMemory(m_device->getDevice(), stagingBufferMemory, nullptr);
@@ -439,21 +469,15 @@ void EngineApp::updateUniformBuffer(uint32_t currentImage)
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     CameraUBO u_camera{};
-    u_camera.model = glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
-    u_camera.model = glm::translate(u_camera.model, glm::vec3(m_translate[0], m_translate[1], m_translate[2]));
-    u_camera.model = glm::rotate(u_camera.model, glm::radians(m_rotate[0]), glm::vec3(1.f, 0.f, 0.f));
-    u_camera.model = glm::rotate(u_camera.model, glm::radians(m_rotate[1]), glm::vec3(0.f, 1.f, 0.f));
-    u_camera.model = glm::rotate(u_camera.model, glm::radians(m_rotate[2]), glm::vec3(0.f, 0.f, 1.f));
-    u_camera.model = glm::scale(u_camera.model, glm::vec3(m_scale[0], m_scale[1], m_scale[2]));
-    u_camera.view = glm::lookAt(glm::vec3(2.f), glm::vec3(0.f), glm::vec3(0.f, 0.f, 1.f));
+    u_camera.view = glm::lookAt(glm::vec3(2.f), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
     u_camera.proj = glm::perspective(glm::radians(45.f), m_renderer->getSwapchainAspectRatio(), 0.1f, 10.f);
     u_camera.proj[1][1] *= -1.f; // image would be renderered upside down otherwise due to glm being originally designed for OpenGL where the Y coord is inverted
     memcpy(m_cameraBuffersMapped[currentImage], &u_camera, sizeof(u_camera));
 
     LightUBO u_light{};
     u_light.dLight.colour = glm::vec3(1.f, 1.f, 0.f);
-    u_light.dLight.direction = glm::vec3(0.f, -1.f, 0.f);
-    u_light.pLights[0].colour = glm::vec3(1.f, 1.f, 0.f);
+    u_light.dLight.direction = glm::vec3(-1.f, -1.f, -1.f);
+    u_light.pLights[0].colour = glm::vec3(0.f, 0.f, 0.f);
     u_light.pLights[0].position = glm::vec3(1.f, 1.f, 1.f);
     u_light.pLights[0].constants = glm::vec3(1.f, 0.1f, 0.01f);
     memcpy(m_lightBuffersMapped[currentImage], &u_light, sizeof(u_light));

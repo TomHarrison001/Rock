@@ -10,6 +10,24 @@
 
 namespace Rock
 {
+	static float max(float x, float y, float z)
+	{
+		if (x > y)
+		{
+			if (x > z)
+				return x;
+			else
+				return z;
+		}
+		else
+		{
+			if (y > z)
+				return y;
+			else
+				return z;
+		}
+	}
+
 	static float clamp(float x, float min, float max)
 	{
 		if (min == max)
@@ -77,6 +95,12 @@ namespace Rock
 	static glm::vec3 calculateAcceleration(glm::vec3 f, float m)
 	{
 		return f / m;
+	}
+
+	// f = mu * N
+	static glm::vec3 calculateFriction(float frictionCoeff, glm::vec3 normalForce)
+	{
+		return frictionCoeff * normalForce;
 	}
 
 	static float distanceOBBtoPoint(entt::registry& entities, entt::entity& obbEntity, glm::vec3& point)

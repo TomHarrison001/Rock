@@ -223,8 +223,8 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, entt::registry& m_registr
         throw std::runtime_error("Failed to record render command buffer.");
 }
 
-void Renderer::recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer, std::vector<VkDescriptorSet> descriptorSets, std::vector<uint32_t> indices,
-    float* m_translation, float* m_rotation, float* m_scale)
+void Renderer::recordCommandBuffer(Pipeline* pipeline, entt::registry& m_registry, std::vector<entt::entity> entities, std::vector<VkDescriptorSet> descriptorSets,
+    float* m_translate, float* m_rotate, float* m_scale)
 {
     VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
 
@@ -239,12 +239,19 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, Vk
     pipeline->bindGraphics(commandBuffer);
     beginSwapchainRenderPass(pipeline, commandBuffer, true);
 
-    VkBuffer vertexBuffers[] = { vertexBuffer };
-    VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayout(), 0, 1, &descriptorSets[m_currentFrame], 0, nullptr);
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+
+    for (entt::entity& entity : entities)
+    {
+        auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
+        auto& transformComp = m_registry.get<Rock::TransformComponent>(entity);
+
+        VkDeviceSize offsets[] = { 0 };
+        vkCmdPushConstants(commandBuffer, pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transformComp.m_transform);
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &renderComp.m_vertexBuffer, offsets);
+        vkCmdBindIndexBuffer(commandBuffer, renderComp.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(renderComp.m_indices.size()), 1, 0, 0, 0);
+    }
 
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -361,8 +368,8 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, VkBuffer vertexBuffer, Vk
     ImGui::Text("GameObject 1");
     ImGui::Separator();
     ImGui::Text("Transform:");
-    ImGui::DragFloat3("Translation", m_translation, 0.01f, -5.f, 5.f);
-    ImGui::DragFloat3("Rotation", m_rotation, 0.1f, -180.f, 180.f);
+    ImGui::DragFloat3("Translation", m_translate, 0.01f, -5.f, 5.f);
+    ImGui::DragFloat3("Rotation", m_rotate, 0.1f, -180.f, 180.f);
     ImGui::DragFloat3("Scale", m_scale, 0.01f, 0.f, 5.f);
     ImGui::Separator();
     ImGui::Text("Collider:");

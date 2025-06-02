@@ -2,10 +2,10 @@
 
 #include "examples/gameApp.hpp"
 
-#define STB_IMAGE_IMPLEMENTATION
+//#define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
-#define TINYOBJLOADER_IMPLEMENTATION
+//#define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader/tiny_obj_loader.h>
 
 void GameApp::initApplication()
@@ -530,11 +530,6 @@ void GameApp::endSingleTimeCommands(VkCommandBuffer commandBuffer)
 
 void GameApp::updateUniformBuffer(uint32_t currentImage)
 {
-    static auto startTime = std::chrono::high_resolution_clock::now();
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
     CameraUBO u_camera{};
     u_camera.view = glm::lookAt(glm::vec3(-4.f, 6.f, -12.f), glm::vec3(0.f, 0.f, -2.f), glm::vec3(0.f, 1.f, 0.f));
     u_camera.proj = glm::perspective(glm::radians(45.f), m_renderer->getSwapchainAspectRatio(), 0.1f, 1000.f);
