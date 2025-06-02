@@ -31,14 +31,14 @@ struct spotLight
 
 const int numPointLights = 1;
 
-layout(binding = 1) uniform sampler2D u_texture;
+layout(set = 1, binding = 0) uniform sampler2D u_texture;
 
-layout(binding = 2) uniform LightUBO {
+layout(set = 0, binding = 1) uniform LightUBO {
     directionalLight dLight;
     pointLight pLights[numPointLights];
 } u_light;
 
-layout(binding = 3) uniform ViewUBO {
+layout(set = 0, binding = 2) uniform ViewUBO {
     vec3 viewPos;
 } u_view;
 

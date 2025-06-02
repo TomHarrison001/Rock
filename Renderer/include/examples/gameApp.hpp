@@ -30,17 +30,18 @@ private:
     void initApplication() override;
     void mainLoop() override;
     void cleanup() override;
-    void createDescriptorSetLayout();
+    void createDescriptorSetLayouts();
     void createGraphicsPipeline();
-    void createTextureImage();
-    void createTextureImageView();
-    void createTextureSampler();
+    void loadTexture(entt::entity entity, const char* path);
+    void createTextureImageView(entt::entity entity);
+    void createTextureSampler(entt::entity entity);
     void loadModel(entt::entity entity, const char* path);
     void createVertexBuffer(entt::entity entity);
     void createIndexBuffer(entt::entity entity);
     void createUniformBuffers();
     void createDescriptorPool();
     void createDescriptorSets();
+    void createTextureDescriptorSet(entt::entity entity);
 
     void updateUniformBuffer(uint32_t currentImage);
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
@@ -50,11 +51,8 @@ private:
     Pipeline* m_graphicsPipeline;
     VkSampleCountFlagBits m_msaaSamples = VK_SAMPLE_COUNT_1_BIT; // multisample anti-aliasing
 
-    uint32_t m_mipLevels;
-    VkImage m_textureImage;
-    VkDeviceMemory m_textureImageMemory;
-    VkImageView m_textureImageView;
-    VkSampler m_textureSampler;
+    // textures
+    VkDescriptorSetLayout m_textureDescriptorSetLayout;
 
     // camera and light UBOs
     std::vector<VkBuffer> m_cameraBuffers;

@@ -2,10 +2,10 @@
 
 #include "examples/gameApp.hpp"
 
-//#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
-//#define TINYOBJLOADER_IMPLEMENTATION
+#define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader/tiny_obj_loader.h>
 
 void GameApp::initApplication()
@@ -15,35 +15,43 @@ void GameApp::initApplication()
     m_descriptorManager = new DescriptorManager(m_device, Swapchain::MAX_FRAMES_IN_FLIGHT);
     m_renderer = new Renderer(m_device, m_msaaSamples, true);
 
-    createDescriptorSetLayout();
+    createDescriptorSetLayouts();
     createGraphicsPipeline();
-    createTextureImage();
-    createTextureImageView();
-    createTextureSampler();
+    createUniformBuffers();
+    createDescriptorPool();
+    createDescriptorSets();
     m_floor = m_registry.create();
     m_registry.emplace<Rock::RenderComponent>(m_floor);
     m_registry.emplace<Rock::TransformComponent>(m_floor, glm::vec3(0.f, -1.f, 53.5f), glm::vec3(0.f), glm::vec3(5.f, 1.f, 120.f));
     m_registry.emplace<Rock::OBBComponent>(m_floor, glm::vec3(2.5f, 0.5f, 60.f));
+    loadTexture(m_floor, "./res/textures/cube.png");
     loadModel(m_floor, "./res/models/cube.obj");
     m_player = m_registry.create();
     m_registry.emplace<Rock::RenderComponent>(m_player);
     m_registry.emplace<Rock::TransformComponent>(m_player, glm::vec3(0.f, 0.f, -5.f), glm::vec3(0.f), glm::vec3(1.f));
     m_registry.emplace<Rock::OBBComponent>(m_player, glm::vec3(0.5f));
+    loadTexture(m_player, "./res/textures/orangeCube.png");
     loadModel(m_player, "./res/models/cube.obj");
-    for (int i = 0; i < 12; i++)
+    entt::entity entity = m_registry.create();
+    m_cubes.push_back(entity);
+    double x = (double)rand() / RAND_MAX;
+    m_registry.emplace<Rock::RenderComponent>(entity);
+    m_registry.emplace<Rock::TransformComponent>(entity, glm::vec3(x * 4.f - 2.f, 0.f, 0.f), glm::vec3(0.f), glm::vec3(1.f));
+    m_registry.emplace<Rock::OBBComponent>(entity, glm::vec3(0.5f));
+    m_registry.emplace<Rock::RigidbodyComponent>(entity, 100.f);
+    loadTexture(entity, "./res/textures/blueCube.png");
+    loadModel(entity, "./res/models/cube.obj");
+    for (int i = 1; i < 12; i++)
     {
-        entt::entity entity = m_registry.create();
-        m_cubes.push_back(entity);
+        entt::entity cube = m_registry.create();
+        m_cubes.push_back(cube);
         double x = (double)rand() / RAND_MAX;
-        m_registry.emplace<Rock::RenderComponent>(entity);
-        m_registry.emplace<Rock::TransformComponent>(entity, glm::vec3(x * 4.f - 2.f, 0.f, 10.f * i), glm::vec3(0.f), glm::vec3(1.f));
-        m_registry.emplace<Rock::OBBComponent>(entity, glm::vec3(0.5f));
-        m_registry.emplace<Rock::RigidbodyComponent>(entity, 100.f);
-        loadModel(entity, "./res/models/cube.obj");
+        m_registry.emplace<Rock::RenderComponent>(cube);
+        m_registry.emplace<Rock::TransformComponent>(cube, glm::vec3(x * 4.f - 2.f, 0.f, 10.f * i), glm::vec3(0.f), glm::vec3(1.f));
+        m_registry.emplace<Rock::OBBComponent>(cube, glm::vec3(0.5f));
+        m_registry.emplace<Rock::RigidbodyComponent>(cube, 100.f);
+        m_registry.get<Rock::RenderComponent>(cube) = m_registry.get<Rock::RenderComponent>(entity);
     }
-    createUniformBuffers();
-    createDescriptorPool();
-    createDescriptorSets();
 }
 
 void GameApp::mainLoop()
@@ -147,15 +155,16 @@ void GameApp::mainLoop()
 void GameApp::cleanup()
 {
     m_graphicsPipeline->destroyPipelineLayout();
-    vkDestroySampler(m_device->getDevice(), m_textureSampler, nullptr);
-    vkDestroyImageView(m_device->getDevice(), m_textureImageView, nullptr);
-    vkDestroyImage(m_device->getDevice(), m_textureImage, nullptr);
-    vkFreeMemory(m_device->getDevice(), m_textureImageMemory, nullptr);
     m_cubes.push_back(m_floor);
     m_cubes.push_back(m_player);
-    for (entt::entity entity : m_cubes)
+    std::vector<entt::entity> m_gameObjects = { m_floor, m_player, m_cubes[0] };
+    for (entt::entity entity : m_gameObjects)
     {
         auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
+        vkDestroySampler(m_device->getDevice(), renderComp.m_textureSampler, nullptr);
+        vkDestroyImageView(m_device->getDevice(), renderComp.m_textureImageView, nullptr);
+        vkDestroyImage(m_device->getDevice(), renderComp.m_textureImage, nullptr);
+        vkFreeMemory(m_device->getDevice(), renderComp.m_textureImageMemory, nullptr);
         vkDestroyBuffer(m_device->getDevice(), renderComp.m_vertexBuffer, nullptr);
         vkDestroyBuffer(m_device->getDevice(), renderComp.m_indexBuffer, nullptr);
         vkFreeMemory(m_device->getDevice(), renderComp.m_vertexBufferMemory, nullptr);
@@ -170,6 +179,7 @@ void GameApp::cleanup()
         vkFreeMemory(m_device->getDevice(), m_lightBuffersMemory[i], nullptr);
         vkFreeMemory(m_device->getDevice(), m_viewPosBuffersMemory[i], nullptr);
     }
+    vkDestroyDescriptorSetLayout(m_device->getDevice(), m_textureDescriptorSetLayout, nullptr);
     delete m_descriptorManager;
     m_descriptorManager = nullptr;
     delete m_graphicsPipeline;
@@ -195,13 +205,27 @@ void GameApp::drawFrame()
     m_renderer->endFrame();
 }
 
-void GameApp::createDescriptorSetLayout()
+void GameApp::createDescriptorSetLayouts()
 {
     m_descriptorManager->addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
-    m_descriptorManager->addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    m_descriptorManager->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
     m_descriptorManager->addBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    m_descriptorManager->addBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
     m_descriptorManager->buildDescriptorSetLayout();
+
+    VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+    samplerLayoutBinding.binding = 0;
+    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerLayoutBinding.pImmutableSamplers = nullptr;
+    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &samplerLayoutBinding;
+
+    if (vkCreateDescriptorSetLayout(m_device->getDevice(), &layoutInfo, nullptr, &m_textureDescriptorSetLayout) != VK_SUCCESS)
+        throw std::runtime_error("Failed to create texture descriptor set layout.");
 }
 
 void GameApp::createGraphicsPipeline()
@@ -211,10 +235,12 @@ void GameApp::createGraphicsPipeline()
     psRange.size = sizeof(glm::mat4);
     psRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+    VkDescriptorSetLayout setLayouts[] = { *m_descriptorManager->getDescriptorSetLayout(), m_textureDescriptorSetLayout };
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = m_descriptorManager->getDescriptorSetLayout();
+    pipelineLayoutInfo.setLayoutCount = 2;
+    pipelineLayoutInfo.pSetLayouts = setLayouts;
     pipelineLayoutInfo.pushConstantRangeCount = 1;
     pipelineLayoutInfo.pPushConstantRanges = &psRange;
 
@@ -241,12 +267,13 @@ void GameApp::createGraphicsPipeline()
     m_graphicsPipeline = new Pipeline(m_device, pipelineLayoutInfo, pipelineSettings, "./res/shaders/gameApp/vert.spv", "./res/shaders/gameApp/frag.spv");
 }
 
-void GameApp::createTextureImage()
+void GameApp::loadTexture(entt::entity entity, const char* path)
 {
+    auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load("./res/textures/cube.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(path, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
-    m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+    renderComp.m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
     if (!pixels)
         throw std::runtime_error("Failed to load texture image.");
@@ -262,23 +289,28 @@ void GameApp::createTextureImage()
 
     stbi_image_free(pixels);
 
-    m_device->createImage(texWidth, texHeight, m_mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_textureImage, m_textureImageMemory);
+    m_device->createImage(texWidth, texHeight, renderComp.m_mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, renderComp.m_textureImage, renderComp.m_textureImageMemory);
 
-    transitionImageLayout(m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_mipLevels);
-    copyBufferToImage(stagingBuffer, m_textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    transitionImageLayout(renderComp.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, renderComp.m_mipLevels);
+    copyBufferToImage(stagingBuffer, renderComp.m_textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
     vkDestroyBuffer(m_device->getDevice(), stagingBuffer, nullptr);
     vkFreeMemory(m_device->getDevice(), stagingBufferMemory, nullptr);
 
-    generateMipmaps(m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, m_mipLevels);
+    generateMipmaps(renderComp.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, renderComp.m_mipLevels);
+
+    createTextureImageView(entity);
+    createTextureSampler(entity);
+    createTextureDescriptorSet(entity);
 }
 
-void GameApp::createTextureImageView()
+void GameApp::createTextureImageView(entt::entity entity)
 {
-    m_textureImageView = m_device->createImageView(m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, m_mipLevels);
+    auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
+    renderComp.m_textureImageView = m_device->createImageView(renderComp.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, renderComp.m_mipLevels);
 }
 
-void GameApp::createTextureSampler()
+void GameApp::createTextureSampler(entt::entity entity)
 {
     VkPhysicalDeviceProperties properties{};
     vkGetPhysicalDeviceProperties(m_device->getPhysicalDevice(), &properties);
@@ -301,7 +333,8 @@ void GameApp::createTextureSampler()
     ci.minLod = 0.f;
     ci.maxLod = VK_LOD_CLAMP_NONE;
 
-    if (vkCreateSampler(m_device->getDevice(), &ci, nullptr, &m_textureSampler) != VK_SUCCESS)
+    auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
+    if (vkCreateSampler(m_device->getDevice(), &ci, nullptr, &renderComp.m_textureSampler) != VK_SUCCESS)
         throw std::runtime_error("Failed to create texture sampler.");
 }
 
@@ -430,9 +463,9 @@ void GameApp::createUniformBuffers()
 void GameApp::createDescriptorPool()
 {
     m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
-    m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
     m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
     m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT));
+    m_descriptorManager->addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(Swapchain::MAX_FRAMES_IN_FLIGHT * 2 + 1));
     m_descriptorManager->buildDescriptorPool();
 }
 
@@ -449,29 +482,52 @@ void GameApp::createDescriptorSets()
 
         m_descriptorManager->addWriteDescriptorSet(0, &cameraBufferInfo, nullptr);
 
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = m_textureImageView;
-        imageInfo.sampler = m_textureSampler;
-
-        m_descriptorManager->addWriteDescriptorSet(1, nullptr, &imageInfo);
-
         VkDescriptorBufferInfo lightBufferInfo{};
         lightBufferInfo.buffer = m_lightBuffers[i];
         lightBufferInfo.offset = 0;
         lightBufferInfo.range = sizeof(LightUBO);
 
-        m_descriptorManager->addWriteDescriptorSet(2, &lightBufferInfo, nullptr);
+        m_descriptorManager->addWriteDescriptorSet(1, &lightBufferInfo, nullptr);
 
         VkDescriptorBufferInfo viewPosBufferInfo{};
         viewPosBufferInfo.buffer = m_viewPosBuffers[i];
         viewPosBufferInfo.offset = 0;
         viewPosBufferInfo.range = sizeof(ViewUBO);
 
-        m_descriptorManager->addWriteDescriptorSet(3, &viewPosBufferInfo, nullptr);
+        m_descriptorManager->addWriteDescriptorSet(2, &viewPosBufferInfo, nullptr);
 
         m_descriptorManager->overwrite(i);
     }
+}
+
+void GameApp::createTextureDescriptorSet(entt::entity entity)
+{
+    auto& renderComp = m_registry.get<Rock::RenderComponent>(entity);
+
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = m_descriptorManager->getDescriptorPool();
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &m_textureDescriptorSetLayout;
+
+    if (vkAllocateDescriptorSets(m_device->getDevice(), &allocInfo, &renderComp.descriptorSet) != VK_SUCCESS)
+        throw std::runtime_error("Failed to allocate descriptor set.");
+
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = renderComp.m_textureImageView;
+    imageInfo.sampler = renderComp.m_textureSampler;
+
+    VkWriteDescriptorSet descriptorWrite{};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = renderComp.descriptorSet;
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pImageInfo = &imageInfo;
+
+    vkUpdateDescriptorSets(m_device->getDevice(), 1, &descriptorWrite, 0, nullptr);
 }
 
 void GameApp::updateUniformBuffer(uint32_t currentImage)
@@ -518,7 +574,7 @@ void GameApp::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWi
     int32_t mipWidth = texWidth;
     int32_t mipHeight = texHeight;
 
-    for (uint32_t i = 1; i < m_mipLevels; i++)
+    for (uint32_t i = 1; i < mipLevels; i++)
     {
         barrier.subresourceRange.baseMipLevel = i - 1;
         barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -555,7 +611,7 @@ void GameApp::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWi
         if (mipHeight > 1) mipHeight /= 2;
     }
 
-    barrier.subresourceRange.baseMipLevel = m_mipLevels - 1;
+    barrier.subresourceRange.baseMipLevel = mipLevels - 1;
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
