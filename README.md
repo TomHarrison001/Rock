@@ -6,15 +6,18 @@
   - Change active application in Renderer entry point (main.cpp)
 - To run the testing:
   - Set Testing as startup project
-> Run `compile.bat` to compile shaders and run Doxygen.
 
-## Built with
+> Run `setup.bat` to compile shaders.
+
+> Run `setup.bat` to run Doxygen.
+
+## Required
 
 |Name|Version|
 -----|-----
-|Vulkan|1.4.309.0|
-|C++|ISO C++17|
-|Visual Studio|2022 (v143)|
+|[Vulkan SDK](https://vulkan.lunarg.com/sdk/home)|1.4.309.0|
+
+If using a different version of Vulkan SDK, change the Additional Include Directories (Configuration Properties > C/C++) and Additional Library Directories (Configuration Properties > Linker) to include that version for the Renderer, Physics and Testing projects.
 
 ## Dependencies
 
@@ -27,3 +30,10 @@
 |imgui|headers included|
 |gtests|lib included|
 |EnTT|header included|
+
+## Built with
+
+|Name|Version|
+-----|-----
+|C++|ISO C++17|
+|Visual Studio|2022 (v143)|
