@@ -5,8 +5,8 @@
 int main()
 {
     //Application* app = new ComputeApp();
-    //Application* app = new EngineApp();
-    Application* app = new GameApp();
+    Application* app = new EngineApp();
+    //Application* app = new GameApp();
 
     try
     {

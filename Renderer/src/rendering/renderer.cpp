@@ -260,7 +260,7 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, entt::registry& m_registr
     ImGui::NewFrame();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     const ImVec4 bgColour = ImVec4(0.1f, 0.1f, 0.1f, 0.f);
-    const ImVec4 editorColour = ImVec4(0.1f, 0.1f, 0.1f, 0.5f);
+    const ImVec4 editorColour = ImVec4(0.1f, 0.1f, 0.1f, 0.9f);
     ImVec4* colours = ImGui::GetStyle().Colors;
     colours[ImGuiCol_WindowBg] = bgColour;
 
@@ -280,32 +280,74 @@ void Renderer::recordCommandBuffer(Pipeline* pipeline, entt::registry& m_registr
     *     Dockspace             *
     ****************************/
 
-    ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
+    static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_PassthruCentralNode;
+    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->Pos);
+    ImGui::SetNextWindowSize(viewport->Size);
+    ImGui::SetNextWindowViewport(viewport->ID);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
+    windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+    windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+    if (dockspaceFlags & ImGuiDockNodeFlags_PassthruCentralNode)
+        windowFlags |= ImGuiWindowFlags_NoBackground;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
+    ImGui::Begin("DockSpace", nullptr, windowFlags);
+    ImGui::PopStyleVar();
+    ImGui::PopStyleVar(2);
+
+    if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+    {
+        ImGuiID dockspaceID = ImGui::GetID("MyDockSpace");
+        ImGui::DockSpace(dockspaceID, ImVec2(0.f, 0.f), dockspaceFlags);
+
+        static auto firstTime = true;
+        if (firstTime)
+        {
+            ImGui::DockBuilderRemoveNode(dockspaceID);
+            ImGui::DockBuilderAddNode(dockspaceID, dockspaceFlags | ImGuiDockNodeFlags_DockSpace);
+            ImGui::DockBuilderSetNodeSize(dockspaceID, viewport->Size);
+
+            auto left = ImGui::DockBuilderSplitNode(dockspaceID, ImGuiDir_Left, 0.2f, nullptr, &dockspaceID);
+            auto bottomLeft = ImGui::DockBuilderSplitNode(left, ImGuiDir_Down, 0.5f, nullptr, &left);
+            auto right = ImGui::DockBuilderSplitNode(dockspaceID, ImGuiDir_Right, 0.3f, nullptr, &dockspaceID);
+            auto down = ImGui::DockBuilderSplitNode(dockspaceID, ImGuiDir_Down, 0.2f, nullptr, &dockspaceID);
+
+            ImGui::DockBuilderDockWindow("Scene", left);
+            ImGui::DockBuilderDockWindow("File Manager", bottomLeft);
+            ImGui::DockBuilderDockWindow("Properties", right);
+            ImGui::DockBuilderDockWindow("Console", down);
+
+            firstTime = false;
+        }
+    }
+
+    ImGui::End();
 
     /****************************
     *     Viewport              *
     ****************************/
 
-    ImGui::Begin("Viewport");
-    ImGui::End();
+    //ImGui::Begin("Viewport");
+    //ImGui::End();
 
     /****************************
     *     Editor                *
     ****************************/
 
     colours[ImGuiCol_WindowBg] = editorColour;
-    ImGui::Begin("Editor");
-    ImGui::Text("main.cpp");
-    ImGui::Text("");
-    ImGui::Text("#include <iostream>");
-    ImGui::Text("");
-    ImGui::Text("int main(int argc, char* argv[])");
-    ImGui::Text("{");
-    ImGui::Text("    return 0;");
-    ImGui::Text("}");
-    ImGui::Text("");
-    ImGui::End();
-    colours[ImGuiCol_WindowBg] = bgColour;
+    //ImGui::Begin("Editor");
+    //ImGui::Text("main.cpp");
+    //ImGui::Text("");
+    //ImGui::Text("#include <iostream>");
+    //ImGui::Text("");
+    //ImGui::Text("int main(int argc, char* argv[])");
+    //ImGui::Text("{");
+    //ImGui::Text("    return 0;");
+    //ImGui::Text("}");
+    //ImGui::Text("");
+    //ImGui::End();
 
     /****************************
     *     Scene hierarchy       *
